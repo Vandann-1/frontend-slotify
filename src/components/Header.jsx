@@ -1,6 +1,15 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import {
+  ChevronDown,
+  Calendar,
+  LayoutDashboard,
+  BarChart,
+  Stethoscope,
+  GraduationCap,
+  Briefcase
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Header = () => {
 
@@ -11,21 +20,24 @@ const Header = () => {
 
   return (
 
-    <header className="bg-white border-b sticky top-0 z-50">
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200">
 
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
-        {/* LOGO */}
+
+        {/* Logo */}
         <Link
           to="/"
-          className="text-2xl font-bold text-blue-600"
+          className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
         >
           Slotify
         </Link>
 
 
-        {/* NAV LINKS */}
+
+        {/* Navigation */}
         <nav className="hidden md:flex items-center gap-8">
+
 
           {/* PRODUCTS */}
           <div
@@ -34,45 +46,53 @@ const Header = () => {
             onMouseLeave={() => setProductsOpen(false)}
           >
 
-            <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600">
+            <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium">
 
-              Products
-
-              <ChevronDown size={16} />
+              Products <ChevronDown size={16} />
 
             </button>
 
 
-            {productsOpen && (
+            <AnimatePresence>
 
-              <div className="absolute top-8 left-0 bg-white shadow-lg border rounded-lg w-56 p-3">
+              {productsOpen && (
 
-                <Link
-                  to="/products/scheduling"
-                  className="block px-3 py-2 hover:bg-gray-100 rounded"
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-10 left-0 w-72 bg-white rounded-xl shadow-xl border p-3"
                 >
-                  Scheduling
-                </Link>
 
-                <Link
-                  to="/products/workspaces"
-                  className="block px-3 py-2 hover:bg-gray-100 rounded"
-                >
-                  Workspaces
-                </Link>
+                  <DropdownItem
+                    icon={<Calendar size={18} />}
+                    title="Scheduling"
+                    desc="Manage bookings and appointments"
+                    to="/products/scheduling"
+                  />
 
-                <Link
-                  to="/products/analytics"
-                  className="block px-3 py-2 hover:bg-gray-100 rounded"
-                >
-                  Analytics
-                </Link>
+                  <DropdownItem
+                    icon={<LayoutDashboard size={18} />}
+                    title="Workspaces"
+                    desc="Organize teams and workflows"
+                    to="/products/workspaces"
+                  />
 
-              </div>
+                  <DropdownItem
+                    icon={<BarChart size={18} />}
+                    title="Analytics"
+                    desc="Track performance and insights"
+                    to="/products/analytics"
+                  />
 
-            )}
+                </motion.div>
+
+              )}
+
+            </AnimatePresence>
 
           </div>
+
 
 
           {/* SERVICES */}
@@ -82,87 +102,112 @@ const Header = () => {
             onMouseLeave={() => setServicesOpen(false)}
           >
 
-            <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600">
+            <button className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium">
 
-              Services
-
-              <ChevronDown size={16} />
+              Services <ChevronDown size={16} />
 
             </button>
 
 
-            {servicesOpen && (
+            <AnimatePresence>
 
-              <div className="absolute top-8 left-0 bg-white shadow-lg border rounded-lg w-56 p-3">
+              {servicesOpen && (
 
-                <Link
-                  to="/services/doctors"
-                  className="block px-3 py-2 hover:bg-gray-100 rounded"
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-10 left-0 w-72 bg-white rounded-xl shadow-xl border p-3"
                 >
-                  For Doctors
-                </Link>
 
-                <Link
-                  to="/services/teachers"
-                  className="block px-3 py-2 hover:bg-gray-100 rounded"
-                >
-                  For Teachers
-                </Link>
+                  <DropdownItem
+                    icon={<Stethoscope size={18} />}
+                    title="Doctors"
+                    desc="Manage patient appointments"
+                    to="/services/doctors"
+                  />
 
-                <Link
-                  to="/services/freelancers"
-                  className="block px-3 py-2 hover:bg-gray-100 rounded"
-                >
-                  For Freelancers
-                </Link>
+                  <DropdownItem
+                    icon={<GraduationCap size={18} />}
+                    title="Teachers"
+                    desc="Schedule classes and sessions"
+                    to="/services/teachers"
+                  />
 
-              </div>
+                  <DropdownItem
+                    icon={<Briefcase size={18} />}
+                    title="Freelancers"
+                    desc="Manage client bookings"
+                    to="/services/freelancers"
+                  />
 
-            )}
+                </motion.div>
+
+              )}
+
+            </AnimatePresence>
 
           </div>
 
 
-          {/* PRICING */}
+
+          {/* Pricing */}
           <Link
             to="/pricing"
-            className="text-gray-700 hover:text-blue-600"
+            className="text-gray-700 hover:text-blue-600 font-medium"
           >
             Pricing
           </Link>
 
+
         </nav>
 
 
-        {/* RIGHT SIDE */}
+
+        {/* Right side */}
         <div className="flex items-center gap-4">
+
 
           {!isLoggedIn ? (
 
             <>
+
               <Link
                 to="/login"
-                className="text-gray-700 hover:text-blue-600"
+                className="text-gray-700 hover:text-blue-600 font-medium"
               >
                 Login
               </Link>
 
-              <Link
-                to="/create-workspace"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Create Workspace
-              </Link>
+
+                <Link
+                  to="/Register"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-lg shadow-md"
+                >
+                  Get Started
+                </Link>
+
+              </motion.div>
+
             </>
 
           ) : (
 
-            <Link
-              to="/dashboard"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-            >
-              Dashboard
-            </Link>
+            <motion.div whileHover={{ scale: 1.05 }}>
+
+              <Link
+                to="/dashboard"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-lg shadow-md"
+              >
+                Dashboard
+              </Link>
+
+            </motion.div>
 
           )}
 
@@ -175,5 +220,38 @@ const Header = () => {
   );
 
 };
+
+
+
+function DropdownItem({ icon, title, desc, to }) {
+
+  return (
+
+    <Link
+      to={to}
+      className="flex gap-3 p-3 rounded-lg hover:bg-gray-100 transition"
+    >
+
+      <div className="text-blue-600">
+        {icon}
+      </div>
+
+      <div>
+
+        <div className="font-medium text-gray-900">
+          {title}
+        </div>
+
+        <div className="text-sm text-gray-500">
+          {desc}
+        </div>
+
+      </div>
+
+    </Link>
+
+  );
+
+}
 
 export default Header;

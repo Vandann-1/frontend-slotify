@@ -7,10 +7,11 @@ export const registerUser = async (data) => {
 
 export const loginUser = async (data) => {
 
-  const response = await axiosInstance.post("/auth/login/", data);
-
-  localStorage.setItem("access_token", response.data.access);
-  localStorage.setItem("refresh_token", response.data.refresh);
+  const response = await axiosInstance.post("/auth/login/", {
+    username: data.username,
+    password: data.password,
+  });
 
   return response.data;
 };
+

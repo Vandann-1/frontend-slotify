@@ -20,23 +20,27 @@ function Login() {
 
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
 
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
+  try {
 
-      await loginUser(form);
+    const res = await loginUser(form);
 
-      navigate("/dashboard");
+    console.log("SUCCESS:", res);
 
-    } catch {
+  } catch (error) {
 
-      alert("Login failed");
+    console.log("FULL ERROR:", error);
 
+    if (error.response) {
+      console.log("BACKEND ERROR:", error.response.data);
     }
 
-  };
+  }
+
+};
 
   return (
 
