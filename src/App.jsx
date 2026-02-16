@@ -21,7 +21,8 @@ import Register from "./features/auth/pages/Register";
 // ADMIN PAGE
 // ========================================
 
-import Dashboard from "./features/dashboards/Dashboard";
+// import Dashboard from "./features/dashboards/CreateDashboard";
+import CreateDashboard from "./features/dashboards/CreateDashboard";
 
 
 // ========================================
@@ -101,7 +102,7 @@ function ClientRoute({ children }) {
 
   if (user.role !== "client") {
 
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/createdashboard" replace />;
 
   }
 
@@ -141,11 +142,11 @@ function App() {
         {/* ADMIN DASHBOARD */}
 
         <Route
-          path="/dashboard"
+          path="/createdashboard"
           element={
             <ProtectedRoute>
               <AdminRoute>
-                <Dashboard />
+                <CreateDashboard />
               </AdminRoute>
             </ProtectedRoute>
           }

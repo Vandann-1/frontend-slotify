@@ -79,7 +79,7 @@ export default function Login() {
 
       if (data.user.role === "admin") {
 
-        navigate("/dashboard");
+        navigate("/createdashboard");
 
       }
       else if (data.user.role === "client") {

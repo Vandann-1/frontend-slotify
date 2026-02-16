@@ -65,15 +65,16 @@ function Home() {
 
 
           <div className="flex gap-4">
-
+             <Link to="/Register">
             <motion.button
+              
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.95 }}
               className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold shadow-lg"
             >
               Start Free Trial
             </motion.button>
-
+              </Link>
 
 <motion.button
   onClick={() => setOpenDemo(true)}
