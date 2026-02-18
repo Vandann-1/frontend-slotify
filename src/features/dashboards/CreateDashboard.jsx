@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import {
   Briefcase,
   Users,
@@ -6,6 +7,7 @@ import {
   Settings
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
 
 export default function CreateWorkspace() {
 
@@ -20,28 +22,7 @@ export default function CreateWorkspace() {
     description: ""
   });
 
-  const handleChange = (e) => {
-
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
-
-  };
-
-  const handleSubmit = (e) => {
-
-    e.preventDefault();
-
-    localStorage.setItem(
-      "workspace",
-      JSON.stringify(form)
-    );
-
-    navigate("/workspace/dashboard");
-
-  };
-
+  const [loading, setLoading] = useState(false);
 
   const industries = [
     "Healthcare",
@@ -54,7 +35,6 @@ export default function CreateWorkspace() {
     "Other"
   ];
 
-
   const teamSizes = [
     "Just me",
     "2–5 members",
@@ -63,6 +43,102 @@ export default function CreateWorkspace() {
     "25–50 members",
     "50+ members"
   ];
+
+  const handleChange = (e) => {
+
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+
+  };
+
+
+  // convert frontend team size → backend format
+  const convertTeamSize = (size) => {
+
+    const map = {
+
+      "Just me": "just_me",
+      "2–5 members": "2_5",
+      "5–10 members": "5_10",
+      "10–25 members": "10_25",
+      "25–50 members": "25_plus",
+      "50+ members": "25_plus"
+
+    };
+
+    return map[size] || "just_me";
+
+  };
+
+
+  const handleSubmit = async (e) => {
+
+    e.preventDefault();
+
+    try {
+
+      setLoading(true);
+
+      const token = localStorage.getItem("access");
+
+      if (!token) {
+
+        alert("Please login first");
+        navigate("/login");
+        return;
+
+      }
+
+      const payload = {
+
+        name: form.name,
+        tenant_type: "COMPANY",
+        email: form.email,
+        phone: form.phone,
+        team_size: convertTeamSize(form.team_size)
+
+      };
+
+      const response = await axios.post(
+
+        "http://127.0.0.1:8000/api/workspaces/",
+        payload,
+
+        {
+          headers: {
+
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+
+          }
+
+        }
+
+      );
+
+      console.log("Workspace created:", response.data);
+
+      alert("Workspace created successfully");
+
+      navigate("/workspace/dashboard");
+
+    }
+    catch(error) {
+
+      console.error(error.response?.data);
+
+      alert("Failed to create workspace");
+
+    }
+    finally {
+
+      setLoading(false);
+
+    }
+
+  };
 
 
   return (
@@ -104,11 +180,8 @@ export default function CreateWorkspace() {
       {/* MAIN CONTENT */}
       <div className="flex-1 p-10">
 
-
         <div className="max-w-4xl">
 
-
-          {/* HEADER */}
           <h1 className="text-3xl font-bold mb-2">
             Create your workspace
           </h1>
@@ -118,16 +191,12 @@ export default function CreateWorkspace() {
           </p>
 
 
-
-          {/* FORM */}
           <form
             onSubmit={handleSubmit}
             className="bg-white shadow rounded-xl p-8 space-y-6"
           >
 
 
-
-            {/* WORKSPACE NAME */}
             <FormField label="Workspace Name">
 
               <input
@@ -141,8 +210,6 @@ export default function CreateWorkspace() {
             </FormField>
 
 
-
-            {/* INDUSTRY */}
             <FormField label="Industry">
 
               <select
@@ -169,8 +236,6 @@ export default function CreateWorkspace() {
             </FormField>
 
 
-
-            {/* EMAIL + PHONE */}
             <div className="grid grid-cols-2 gap-6">
 
               <FormField label="Contact Email">
@@ -200,8 +265,6 @@ export default function CreateWorkspace() {
             </div>
 
 
-
-            {/* TEAM SIZE */}
             <FormField label="Team Size">
 
               <select
@@ -228,8 +291,6 @@ export default function CreateWorkspace() {
             </FormField>
 
 
-
-            {/* DESCRIPTION */}
             <FormField label="Description">
 
               <textarea
@@ -242,18 +303,19 @@ export default function CreateWorkspace() {
             </FormField>
 
 
-
-            {/* BUTTON */}
             <div className="pt-4">
 
               <button
+                type="submit"
+                disabled={loading}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg shadow font-medium"
               >
-                Create Workspace
+
+                {loading ? "Creating..." : "Create Workspace"}
+
               </button>
 
             </div>
-
 
           </form>
 
@@ -269,16 +331,13 @@ export default function CreateWorkspace() {
 
 
 
-/* COMPONENTS */
-
 function SidebarItem({ children, active }) {
 
   return (
 
-    <div className={`
-      p-2 rounded cursor-pointer
-      ${active ? "bg-blue-50 text-blue-600" : ""}
-    `}>
+    <div className={`p-2 rounded cursor-pointer ${
+      active ? "bg-blue-50 text-blue-600" : ""
+    }`}>
 
       {children}
 
@@ -296,9 +355,7 @@ function FormField({ label, children }) {
     <div>
 
       <label className="block text-sm font-medium mb-2">
-
         {label}
-
       </label>
 
       {children}
