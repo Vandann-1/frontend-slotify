@@ -40,7 +40,7 @@ axiosInstance.interceptors.request.use(
   (config) => {
 
     // Get token stored during login
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem("access");
 
 
     /*
