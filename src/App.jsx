@@ -17,41 +17,32 @@ import Register from "./features/auth/pages/Register";
 ============================== */
 import CreateDashboard from "./features/dashboards/CreateDashboard";
 import WorkspaceList from "./features/dashboards/Listworkspaces";
-import Adminworkspaces from "./features/dashboards/Adminworkspaces";
+import AdminWorkspace from "./features/dashboards/Adminworkspaces";
 
 /* ==============================
    PROTECTED ROUTE
 ============================== */
 function ProtectedRoute({ children }) {
-
   const token = localStorage.getItem("access");
-
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
+  return token ? children : <Navigate to="/login" replace />;
 }
 
 /* ==============================
    APP COMPONENT
 ============================== */
 function App() {
-
   return (
     <BrowserRouter>
       <Routes>
 
         {/* Public Routes */}
         <Route element={<MainLayout />}>
-
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
         </Route>
 
-        {/* Protected Workspace Routes */}
+        {/* Protected Routes */}
         <Route
           path="/workspaces"
           element={
@@ -70,20 +61,18 @@ function App() {
           }
         />
 
+        {/* Dynamic Workspace Route */}
         <Route
-          path="/admin-workspace"
+          path="/workspace/:slug"
           element={
             <ProtectedRoute>
-              <Adminworkspaces />
+              <AdminWorkspace />
             </ProtectedRoute>
           }
         />
 
         {/* Fallback */}
-        <Route
-          path="*"
-          element={<Navigate to="/" replace />}
-        />
+        <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
     </BrowserRouter>
