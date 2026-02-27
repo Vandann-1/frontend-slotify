@@ -1,14 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import InviteMemberForm from "./InviteMemberForm";
+import { useNavigate } from "react-router-dom";
 
 const TeamMembers = ({ slug }) => {
+  const navigate = useNavigate();
+
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
-  // ===== fetch members =====
-  const fetchMembers = async () => {
+  // ✅ stable fetch
+  const fetchMembers = useCallback(async () => {
     try {
       setLoading(true);
       const res = await axiosInstance.get(
@@ -20,11 +23,11 @@ const TeamMembers = ({ slug }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [slug]);
 
   useEffect(() => {
     if (slug) fetchMembers();
-  }, [slug]);
+  }, [slug, fetchMembers]);
 
   if (!slug) {
     return (
@@ -36,12 +39,10 @@ const TeamMembers = ({ slug }) => {
 
   return (
     <div className="space-y-6">
-      {/* ================= HEADER CARD ================= */}
+      {/* HEADER */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-semibold">
-            Team Members
-          </h2>
+          <h2 className="text-2xl font-semibold">Team Members</h2>
           <p className="text-blue-100 text-sm mt-1">
             Manage your workspace team
           </p>
@@ -55,7 +56,7 @@ const TeamMembers = ({ slug }) => {
         </button>
       </div>
 
-      {/* ================= MEMBERS CARD ================= */}
+      {/* MEMBERS TABLE */}
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
         {loading ? (
           <div className="p-10 text-center text-gray-500">
@@ -78,6 +79,9 @@ const TeamMembers = ({ slug }) => {
                 <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Joined
                 </th>
+                <th className="p-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Actions
+                </th>
               </tr>
             </thead>
 
@@ -87,19 +91,19 @@ const TeamMembers = ({ slug }) => {
                   key={m.id}
                   className="border-b last:border-0 hover:bg-gray-50 transition"
                 >
-                  {/* EMAIL + AVATAR */}
+                  {/* EMAIL */}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center text-sm font-semibold">
-                        {m.email?.[0]?.toUpperCase()}
+                        {m.email?.[0]?.toUpperCase() || "?"}
                       </div>
                       <span className="font-medium text-gray-800">
-                        {m.email}
+                        {m.email || "No email"}
                       </span>
                     </div>
                   </td>
 
-                  {/* ROLE BADGE */}
+                  {/* ROLE */}
                   <td className="p-4">
                     <span
                       className={`px-3 py-1 text-xs font-semibold rounded-full ${
@@ -112,9 +116,32 @@ const TeamMembers = ({ slug }) => {
                     </span>
                   </td>
 
-                  {/* DATE */}
+                  {/* DATE (safe) */}
                   <td className="p-4 text-sm text-gray-500">
-                    {new Date(m.joined_at).toLocaleString()}
+                    {m.joined_at
+                      ? new Date(m.joined_at).toLocaleString()
+                      : "—"}
+                  </td>
+
+                  {/* VIEW BUTTON */}
+                  <td className="p-4 text-right">
+                    <button
+                      onClick={() => {
+                        if (!m?.user_id) {
+                          console.error(
+                            "user_id missing in member:",
+                            m
+                          );
+                          return;
+                        }
+                        navigate(
+                          `/admin/professionals/${m.user_id}`
+                        );
+                      }}
+                      className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded-lg hover:bg-black transition"
+                    >
+                      View Details
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -123,11 +150,10 @@ const TeamMembers = ({ slug }) => {
         )}
       </div>
 
-      {/* ================= MODAL ================= */}
+      {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative p-6">
-            {/* CLOSE */}
             <button
               onClick={() => setShowModal(false)}
               className="absolute right-4 top-3 text-gray-400 hover:text-gray-600 text-lg"

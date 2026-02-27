@@ -1,4 +1,5 @@
 import { loginUser } from "../../../api/authApi";
+import { getWorkspaces } from "../../../api/workspaceApi";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -17,63 +18,108 @@ export default function Login() {
   // ================= HANDLE INPUT =================
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   // ================= HANDLE LOGIN =================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+// ================= HANDLE LOGIN =================
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (loading) return;
 
-    setLoading(true);
-    setError("");
+  setLoading(true);
+  setError("");
 
+  try {
+    // 🔐 LOGIN
+    const data = await loginUser(form);
+
+    console.log("FULL LOGIN DATA:", data);
+
+    // ================= SAVE AUTH =================
+    localStorage.setItem("access", data.access);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("user_email", data.user?.email);
+
+    if (data.tenant) {
+      localStorage.setItem("tenant", JSON.stringify(data.tenant));
+    } else {
+      localStorage.removeItem("tenant");
+    }
+
+    // ================= STEP 1: INVITE RESUME =================
+    const pendingInvite = localStorage.getItem("pending_invite_token");
+
+    if (pendingInvite) {
+      localStorage.removeItem("pending_invite_token");
+      navigate(`/invite?token=${pendingInvite}`);
+      return;
+    }
+
+    // ================= STEP 2: USER ROLE CHECK =================
+    const rawRole =
+      data.user?.role ||
+      data.user?.user_type ||
+      data.user?.account_type ||
+      data.role ||
+      "";
+
+    const role = rawRole.toString().toUpperCase();
+    console.log("Detected USER role:", role);
+
+    const PROFESSIONAL_ROLES = ["PROFESSIONAL", "MEMBER", "PRO"];
+
+    // ✅ direct professional users
+    if (PROFESSIONAL_ROLES.includes(role)) {
+      navigate("/professional/dashboard");
+      return;
+    }
+
+    // ================= STEP 3: MEMBERSHIP CHECK (IMPORTANT) =================
     try {
-      const data = await loginUser(form);
+      const workspaces = await getWorkspaces();
+      console.log("Workspace list:", workspaces);
 
-      // ================= SAVE AUTH =================
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      /**
+       * 🔥 KEY LOGIC
+       * If user has memberships but is not owner,
+       * treat as professional user.
+       */
+      const isMemberUser =
+        Array.isArray(workspaces) &&
+        workspaces.length > 0 &&
+        role !== "OWNER" &&
+        role !== "ADMIN";
 
-      // 🔥 IMPORTANT — used by invite guard
-      localStorage.setItem("user_email", data.user?.email);
-
-      if (data.tenant) {
-        localStorage.setItem("tenant", JSON.stringify(data.tenant));
-      } else {
-        localStorage.removeItem("tenant");
-      }
-
-      // ================= 🔥 INVITE RESUME LOGIC =================
-      const pendingInvite = localStorage.getItem("pending_invite_token");
-
-      if (pendingInvite) {
-        console.log("🔁 Resuming pending invite");
-
-        localStorage.removeItem("pending_invite_token");
-        navigate(`/invite?token=${pendingInvite}`);
+      if (isMemberUser) {
+        navigate("/professional/dashboard");
         return;
       }
 
-      // ================= NORMAL FLOW =================
+      // ================= STEP 4: OWNER FLOW =================
+      if (Array.isArray(workspaces) && workspaces.length > 0) {
+        navigate("/workspaces");
+      } else {
+        navigate("/create-dashboard");
+      }
+    } catch (wsError) {
+      console.error("Workspace fetch failed:", wsError);
       navigate("/create-dashboard");
-    } catch (err) {
-      console.error("Login error:", err.response?.data);
-
-      const message =
-        err?.response?.data?.detail ||
-        err?.response?.data?.non_field_errors?.[0] ||
-        "Invalid email or password";
-
-      setError(message);
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    console.error("Login error:", err);
 
+    const message =
+      err?.detail ||
+      err?.response?.data?.detail ||
+      err?.response?.data?.non_field_errors?.[0] ||
+      "Invalid email or password";
+
+    setError(message);
+  } finally {
+    setLoading(false);
+  }
+};
   // ================= UI =================
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -116,7 +162,7 @@ export default function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
         >
           {loading ? "Logging in..." : "Login"}
         </button>
