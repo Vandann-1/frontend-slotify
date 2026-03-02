@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import InviteMemberForm from "./InviteMemberForm";
 import { useNavigate } from "react-router-dom";
@@ -9,9 +9,11 @@ const TeamMembers = ({ slug }) => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState("");
+  const [removingUserId, setRemovingUserId] = useState(null); // ⭐ NEW
 
-  // ✅ stable fetch
-  const fetchMembers = useCallback(async () => {
+  // ================= FETCH MEMBERS =================
+  const fetchMembers = async () => {
     try {
       setLoading(true);
       const res = await axiosInstance.get(
@@ -23,11 +25,47 @@ const TeamMembers = ({ slug }) => {
     } finally {
       setLoading(false);
     }
-  }, [slug]);
+  };
 
   useEffect(() => {
     if (slug) fetchMembers();
-  }, [slug, fetchMembers]);
+  }, [slug]);
+
+  // ================= REMOVE MEMBER ================= ⭐ NEW
+  const handleRemoveMember = async (userId) => {
+    const confirmDelete = window.confirm(
+      "Remove this member from workspace?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      setRemovingUserId(userId);
+
+      await axiosInstance.post(
+        `/workspaces/${slug}/remove-member/`,
+        { user_id: userId }
+      );
+
+      setInviteSuccess("Member removed successfully.");
+      fetchMembers();
+    } catch (err) {
+      console.error("Remove failed:", err);
+      alert(
+        err?.response?.data?.detail ||
+          err?.response?.data?.message ||
+          "Failed to remove member"
+      );
+    } finally {
+      setRemovingUserId(null);
+    }
+  };
+
+  // ================= AUTO HIDE SUCCESS =================
+  useEffect(() => {
+    if (!inviteSuccess) return;
+    const t = setTimeout(() => setInviteSuccess(""), 2500);
+    return () => clearTimeout(t);
+  }, [inviteSuccess]);
 
   if (!slug) {
     return (
@@ -39,10 +77,19 @@ const TeamMembers = ({ slug }) => {
 
   return (
     <div className="space-y-6">
-      {/* HEADER */}
+      {/* ================= SUCCESS ALERT ================= */}
+      {inviteSuccess && (
+        <div className="bg-green-50 text-green-700 border border-green-200 px-4 py-3 rounded-xl">
+          {inviteSuccess}
+        </div>
+      )}
+
+      {/* ================= HEADER ================= */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-semibold">Team Members</h2>
+          <h2 className="text-2xl font-semibold">
+            Team Members
+          </h2>
           <p className="text-blue-100 text-sm mt-1">
             Manage your workspace team
           </p>
@@ -56,7 +103,7 @@ const TeamMembers = ({ slug }) => {
         </button>
       </div>
 
-      {/* MEMBERS TABLE */}
+      {/* ================= MEMBERS TABLE ================= */}
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
         {loading ? (
           <div className="p-10 text-center text-gray-500">
@@ -70,16 +117,16 @@ const TeamMembers = ({ slug }) => {
           <table className="min-w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase">
                   Member
                 </th>
-                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase">
                   Role
                 </th>
-                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase">
                   Joined
                 </th>
-                <th className="p-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="p-4 text-right text-xs font-semibold text-gray-500 uppercase">
                   Actions
                 </th>
               </tr>
@@ -91,7 +138,7 @@ const TeamMembers = ({ slug }) => {
                   key={m.id}
                   className="border-b last:border-0 hover:bg-gray-50 transition"
                 >
-                  {/* EMAIL */}
+                  {/* MEMBER */}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center text-sm font-semibold">
@@ -116,32 +163,40 @@ const TeamMembers = ({ slug }) => {
                     </span>
                   </td>
 
-                  {/* DATE (safe) */}
+                  {/* DATE */}
                   <td className="p-4 text-sm text-gray-500">
                     {m.joined_at
                       ? new Date(m.joined_at).toLocaleString()
                       : "—"}
                   </td>
 
-                  {/* VIEW BUTTON */}
+                  {/* ACTIONS ⭐ IMPROVED */}
                   <td className="p-4 text-right">
-                    <button
-                      onClick={() => {
-                        if (!m?.user_id) {
-                          console.error(
-                            "user_id missing in member:",
-                            m
-                          );
-                          return;
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/professionals/${m.user_id}`)
                         }
-                        navigate(
-                          `/admin/professionals/${m.user_id}`
-                        );
-                      }}
-                      className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded-lg hover:bg-black transition"
-                    >
-                      View Details
-                    </button>
+                        className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded-lg hover:bg-black transition"
+                      >
+                        View
+                      </button>
+
+                      {/* ❌ HIDE REMOVE FOR OWNER */}
+                      {m.role !== "OWNER" && (
+                        <button
+                          onClick={() =>
+                            handleRemoveMember(m.user_id)
+                          }
+                          disabled={removingUserId === m.user_id}
+                          className="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg transition"
+                        >
+                          {removingUserId === m.user_id
+                            ? "Removing..."
+                            : "Remove"}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -150,7 +205,7 @@ const TeamMembers = ({ slug }) => {
         )}
       </div>
 
-      {/* MODAL */}
+      {/* ================= MODAL ================= */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative p-6">
@@ -168,6 +223,9 @@ const TeamMembers = ({ slug }) => {
             <InviteMemberForm
               workspaceSlug={slug}
               onInviteSuccess={() => {
+                setInviteSuccess(
+                  "Invitation sent successfully."
+                );
                 setShowModal(false);
                 fetchMembers();
               }}

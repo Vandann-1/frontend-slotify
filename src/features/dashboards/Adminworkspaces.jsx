@@ -13,7 +13,8 @@ import {
   Bell,
   Search,
   LogOut,
-  User
+  User,
+  IdCard
 } from "lucide-react";
 
 import TeamMembers from "../Adminside/TeamMembers";
@@ -25,6 +26,7 @@ const TABS = {
   DASHBOARD: "dashboard",
   TEAM: "team",
   BOOKINGS: "bookings",
+  PLANS: "plans",
   SETTINGS: "settings",
 };
 
@@ -101,7 +103,14 @@ export default function AdminWorkspace() {
             active={activeTab === TABS.BOOKINGS}
             onClick={() => setActiveTab(TABS.BOOKINGS)}
           />
-          
+          <SidebarItem
+            icon={<IdCard size={20} />}
+            label="Plans"
+            collapsed={collapsed}
+            active={activeTab === TABS.PLANS}
+            onClick={() => setActiveTab(TABS.PLANS)}
+            />
+            
           <div className="pt-6 pb-2 px-4">
             {!collapsed && <p className="text-[10px] font-bold text-blue-300 uppercase tracking-widest opacity-70">Configuration</p>}
           </div>
@@ -173,6 +182,7 @@ export default function AdminWorkspace() {
           {activeTab === TABS.DASHBOARD && <DashboardHome slug={slug} />}
           {activeTab === TABS.TEAM && <TeamMembers slug={slug} />}
           {activeTab === TABS.BOOKINGS && <PlaceholderTab title="Bookings" icon={<Calendar size={48} />} />}
+          {activeTab === TABS.PLANS && <PlaceholderTab title="plans" icon={<IdCard size={48}/>}/>}
           {activeTab === TABS.SETTINGS && <PlaceholderTab title="Settings" icon={<Settings size={48} />} />}
         </main>
       </div>
