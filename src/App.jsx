@@ -48,7 +48,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/invite" element={<InviteValidatePage />} />
+          <Route path="/invite/:token/" element={<InviteValidatePage />} />
           <Route path="/professional/profile"element={<ProfessionalProfile/>}/>    
           <Route path="/admin/professionals/:id" element={<AdminProfessionalDetail />}/> 
         </Route>

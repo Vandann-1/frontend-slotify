@@ -1,90 +1,82 @@
 import axios from "axios";
 
 /*
-  AXIOS INSTANCE FOR SLOTIFY BACKEND
+  SLOTIFY AXIOS INSTANCE
 
-  Responsibilities:
+  Responsibilities
   • Central HTTP client
-  • Attach JWT automatically
+  • Automatically attach JWT
   • Skip auth endpoints safely
-  • Provide strong debugging visibility
-  • Prevent silent auth failures
+  • Handle expired sessions
 */
 
 const axiosInstance = axios.create({
-  baseURL: "http://127.0.0.1:8000/api",
+  baseURL: "http://127.0.0.1:8000/api/",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
+
 /*
   ================= REQUEST INTERCEPTOR =================
-
-  Runs before EVERY request.
-
-  What it does:
-  • Reads access token from localStorage
-  • Skips auth endpoints safely
-  • Attaches Bearer token when available
-  • Adds debug visibility
 */
 
 axiosInstance.interceptors.request.use(
   (config) => {
+
     const token = localStorage.getItem("access");
 
-    // Normalize URL safely
     const url = (config.url || "").toLowerCase();
 
     /*
-      AUTH ENDPOINT DETECTION
-
-      Keep this flexible — do NOT hardcode only one path.
-      This prevents future breakage.
+      AUTH ENDPOINTS
+      These should NEVER attach token
     */
+
     const isAuthEndpoint =
       url.includes("/auth/login") ||
       url.includes("/auth/register") ||
+      url.includes("/auth/google") ||
+      url.includes("/token") ||
       url.includes("/login") ||
-      url.includes("/register") ||
-      url.includes("/token");
+      url.includes("/register");
 
-    // Ensure headers object exists
-    config.headers = config.headers || {};
-
-    /*
-      Attach token when appropriate
-    */
     if (token && !isAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    /*
-      Helpful debug (safe to keep in dev)
-
-      Comment this in production if noisy.
-    */
-    // console.log("API Request:", config.method, config.url);
-
     return config;
   },
+
   (error) => Promise.reject(error)
 );
 
-/*
-  ================= RESPONSE INTERCEPTOR (OPTIONAL BUT STRONG) =================
 
-  Helps detect expired tokens early.
-  Not required but highly recommended.
+/*
+  ================= RESPONSE INTERCEPTOR =================
 */
 
 axiosInstance.interceptors.response.use(
+
   (response) => response,
+
   (error) => {
-    // If unauthorized, you may later trigger logout here
-    if (error.response?.status === 401) {
-      console.warn("Unauthorized request — token may be expired.");
+
+    const status = error.response?.status;
+
+    /*
+      Token expired or invalid
+    */
+
+    if (status === 401) {
+
+      console.warn("Session expired. Logging out.");
+
+      localStorage.removeItem("access");
+      localStorage.removeItem("user");
+
+      window.location.href = "/login";
     }
 
     return Promise.reject(error);
