@@ -1,15 +1,13 @@
 import { loginUser } from "../../../api/authApi";
 import { getWorkspaces } from "../../../api/workspaceApi";
 import { GoogleLogin } from "@react-oauth/google";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 
 export default function Login() {
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
-  const inviteTokenFromURL = searchParams.get("invite");
 
   const [form, setForm] = useState({
     email: "",
@@ -19,47 +17,74 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // ================= HANDLE INVITE TOKEN =================
+
+  useEffect(() => {
+
+
+    const inviteToken = searchParams.get("invite");
+
+    if (inviteToken) {
+      localStorage.setItem("pending_invite_token", inviteToken);
+    }
+
+
+  }, [searchParams]);
+
   // ================= INPUT HANDLER =================
 
   const handleChange = (e) => {
+
     const { name, value } = e.target;
 
     setForm((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+
   };
 
   // ================= REDIRECT LOGIC =================
 
   const handleRedirect = async () => {
 
-    const pendingInvite =
-      inviteTokenFromURL ||
-      localStorage.getItem("pending_invite_token");
+
+    const pendingInvite = localStorage.getItem("pending_invite_token");
 
     if (pendingInvite) {
 
       localStorage.removeItem("pending_invite_token");
 
-      navigate(`/invite/${pendingInvite}`);
+      navigate(`/invite-accept/${pendingInvite}`);
+
       return;
     }
 
-    // normal workspace check
+    try {
 
-    const workspaces = await getWorkspaces();
+      const workspaces = await getWorkspaces();
 
-    if (Array.isArray(workspaces) && workspaces.length > 0) {
-      navigate("/workspaces");
-    } else {
+      if (Array.isArray(workspaces) && workspaces.length > 0) {
+        navigate("/workspaces");
+      } else {
+        navigate("/create-dashboard");
+      }
+
+    } catch (err) {
+
+      console.error("Workspace fetch error:", err);
       navigate("/create-dashboard");
+
     }
+
+
   };
 
   // ================= EMAIL LOGIN =================
 
   const handleSubmit = async (e) => {
+
 
     e.preventDefault();
 
@@ -86,11 +111,14 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+
+
   };
 
   // ================= GOOGLE LOGIN =================
 
   const handleGoogleLogin = async (credentialResponse) => {
+
 
     try {
 
@@ -102,7 +130,7 @@ export default function Login() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            token: credentialResponse.credential
+            token: credentialResponse.credential,
           }),
         }
       );
@@ -124,11 +152,15 @@ export default function Login() {
       console.error("Google login error:", err);
 
     }
+
+
   };
 
   // ================= UI =================
 
   return (
+
+
     <div className="flex min-h-screen">
 
       <div className="w-full lg:w-5/12 flex items-center justify-center">
@@ -144,8 +176,6 @@ export default function Login() {
               {error}
             </div>
           )}
-
-          {/* LOGIN FORM */}
 
           <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -179,8 +209,6 @@ export default function Login() {
 
           </form>
 
-          {/* GOOGLE LOGIN */}
-
           <div className="mt-6 flex justify-center">
 
             <GoogleLogin
@@ -189,8 +217,6 @@ export default function Login() {
             />
 
           </div>
-
-          {/* REGISTER */}
 
           <div className="mt-4 text-sm text-center">
             <Link to="/register">
@@ -203,5 +229,8 @@ export default function Login() {
       </div>
 
     </div>
+
+
   );
 }
+

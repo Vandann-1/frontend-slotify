@@ -42,17 +42,17 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-<Route path="/test" element={<div>TEST PAGE</div>} />
+        <Route path="/test" element={<div>TEST PAGE</div>} />
         {/* ================= PUBLIC ROUTES ================= */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/invite/:token/" element={<InviteValidatePage />} />
-          <Route path="/professional/profile"element={<ProfessionalProfile/>}/>    
-          <Route path="/admin/professionals/:id" element={<AdminProfessionalDetail />}/> 
+          <Route path="/invite-accept/:token" element={<InviteValidatePage />} />
+          <Route path="/professional/profile" element={<ProfessionalProfile />} />
+          <Route path="/admin/professionals/:id" element={<AdminProfessionalDetail />} />
         </Route>
- 
+
         {/* ================= WORKSPACE (PROTECTED) ================= */}
         <Route
           path="/workspaces"
