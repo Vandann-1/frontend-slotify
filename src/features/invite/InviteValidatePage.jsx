@@ -15,7 +15,6 @@ const InviteValidatePage = () => {
 
   useEffect(() => {
 
-
     if (!token) {
       setError("Invalid invitation link.");
       setLoading(false);
@@ -63,11 +62,13 @@ const InviteValidatePage = () => {
 
     validateInvite();
 
-
   }, [token, navigate]);
+
+
 
   const handleAccept = async () => {
 
+    if (!data) return;
 
     try {
 
@@ -77,7 +78,13 @@ const InviteValidatePage = () => {
         token
       });
 
-      navigate("/professional/dashboard");
+      localStorage.removeItem("pending_invite_token");
+
+      if (data.role === "OWNER" || data.role === "ADMIN") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/professional/dashboard");
+      }
 
     } catch (err) {
 
@@ -92,109 +99,109 @@ const InviteValidatePage = () => {
 
     }
 
-
   };
 
-  return (<div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
 
+  return (
 
-    <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
 
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Slotify
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          You've been invited to join a workspace
-        </p>
-      </div>
+      <div className="w-full max-w-md">
 
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
-
-        {loading && (
-          <div className="text-center py-6 text-gray-500">
-            Validating invitation…
-          </div>
-        )}
-
-        {!loading && error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-4 text-sm text-center">
-            {error}
-          </div>
-        )}
-
-        {!loading && !error && (
-          <>
-            <div className="space-y-4 text-sm mb-6">
-
-              <div className="flex justify-between">
-                <span className="text-gray-500">Workspace</span>
-                <span className="font-medium text-gray-900">
-                  {data?.tenant}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-500">Email</span>
-                <span className="font-medium text-gray-900">
-                  {data?.email}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-500">Role</span>
-                <span className="font-medium text-gray-900">
-                  {data?.role}
-                </span>
-              </div>
-
-            </div>
-
-            <button
-              onClick={handleAccept}
-              disabled={accepting || showRegisterModal}
-              className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-black transition"
-            >
-              {accepting ? "Joining workspace…" : "Accept Invitation"}
-            </button>
-          </>
-        )}
-
-      </div>
-
-      <p className="text-center text-xs text-gray-400 mt-6">
-        Secure access powered by Slotify
-      </p>
-
-    </div>
-
-    {showRegisterModal && (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-
-        <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl">
-
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
-            Create an Account
-          </h2>
-
-          <p className="text-sm text-gray-500 mb-6">
-            You must create an account to join this workspace.
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Slotify
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            You've been invited to join a workspace
           </p>
+        </div>
 
-          <button
-            onClick={() => navigate(`/register?invite=${token}`)}
-            className="w-full bg-gray-900 text-white py-2.5 rounded-lg"
-          >
-            Register to Join
-          </button>
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
+
+          {loading && (
+            <div className="text-center py-6 text-gray-500">
+              Validating invitation…
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-4 text-sm text-center">
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && data && (
+            <>
+              <div className="space-y-4 text-sm mb-6">
+
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Workspace</span>
+                  <span className="font-medium text-gray-900">
+                    {data.tenant}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Email</span>
+                  <span className="font-medium text-gray-900">
+                    {data.email}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Role</span>
+                  <span className="font-medium text-gray-900">
+                    {data.role}
+                  </span>
+                </div>
+
+              </div>
+
+              <button
+                onClick={handleAccept}
+                disabled={accepting || showRegisterModal}
+                className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-black transition"
+              >
+                {accepting ? "Joining workspace…" : "Accept Invitation"}
+              </button>
+            </>
+          )}
 
         </div>
 
+        <p className="text-center text-xs text-gray-400 mt-6">
+          Secure access powered by Slotify
+        </p>
+
       </div>
-    )}
 
-  </div>
+      {showRegisterModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
 
+          <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl">
+
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Create an Account
+            </h2>
+
+            <p className="text-sm text-gray-500 mb-6">
+              You must create an account to join this workspace.
+            </p>
+
+            <button
+              onClick={() => navigate(`/register?invite=${token}`)}
+              className="w-full bg-gray-900 text-white py-2.5 rounded-lg"
+            >
+              Register to Join
+            </button>
+
+          </div>
+
+        </div>
+      )}
+
+    </div>
 
   );
 };

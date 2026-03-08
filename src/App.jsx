@@ -38,6 +38,7 @@ function ProtectedRoute({ children }) {
 /* ==============================
    APP COMPONENT
 ============================== */
+
 function App() {
   return (
     <BrowserRouter>
@@ -72,18 +73,18 @@ function App() {
           }
         />
 
-        <Route
-          path="/workspace/:slug"
-          element={
-            <ProtectedRoute>
-              <AdminWorkspace />
-            </ProtectedRoute>
-          }
-        />
+            <Route
+        path="/admin/workspace/:slug"
+        element={
+          <ProtectedRoute>
+            <AdminWorkspace />
+          </ProtectedRoute>
+        }
+      />
 
         {/* ================= PROFESSIONAL (PROTECTED) ================= */}
         <Route
-          path="/professional/dashboard"
+          path="/professional/workspace/:slug"
           element={
             <ProtectedRoute>
               <ProfessionalDashboard />

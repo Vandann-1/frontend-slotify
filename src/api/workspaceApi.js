@@ -1,25 +1,16 @@
 import axiosInstance from "./axiosInstance";
 
-/* ============================================
-   CREATE WORKSPACE
-   POST /api/workspaces/
-============================================ */
+/* CREATE WORKSPACE */
 export const createWorkspace = async (workspaceData) => {
   try {
-    const response = await axiosInstance.post(
-      "/workspaces/",
-      workspaceData
-    );
+    const response = await axiosInstance.post("/workspaces/", workspaceData);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
   }
 };
 
-/* ============================================
-   GET ALL USER WORKSPACES
-   GET /api/workspaces/
-============================================ */
+/* GET ALL WORKSPACES */
 export const getWorkspaces = async () => {
   try {
     const response = await axiosInstance.get("/workspaces/");
@@ -29,25 +20,17 @@ export const getWorkspaces = async () => {
   }
 };
 
-/* ============================================
-   GET WORKSPACE BY SLUG
-   GET /api/workspaces/{slug}/
-============================================ */
+/* GET WORKSPACE BY SLUG */
 export const getWorkspaceBySlug = async (slug) => {
   try {
-    const response = await axiosInstance.get(
-      `/workspaces/${slug}/`
-    );
+    const response = await axiosInstance.get(`/workspaces/${slug}/`);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
   }
 };
 
-/* ============================================
-   UPDATE WORKSPACE
-   PUT /api/workspaces/{slug}/
-============================================ */
+/* UPDATE WORKSPACE */
 export const updateWorkspace = async (slug, workspaceData) => {
   try {
     const response = await axiosInstance.put(
@@ -60,15 +43,10 @@ export const updateWorkspace = async (slug, workspaceData) => {
   }
 };
 
-/* ============================================
-   DELETE WORKSPACE
-   DELETE /api/workspaces/{slug}/
-============================================ */
+/* DELETE WORKSPACE */
 export const deleteWorkspace = async (slug) => {
   try {
-    const response = await axiosInstance.delete(
-      `/workspaces/${slug}/`
-    );
+    const response = await axiosInstance.delete(`/workspaces/${slug}/`);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
