@@ -194,11 +194,10 @@ const TeamMembers = ({ slug }) => {
 
             }}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold
-            ${
-              limitReached
+            ${limitReached
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 shadow-lg"
-            }`}
+              }`}
           >
 
             {limitReached ? (
@@ -225,11 +224,10 @@ const TeamMembers = ({ slug }) => {
 
         <div
           className={`rounded-xl border p-6 shadow-sm
-          ${
-            limitReached
+          ${limitReached
               ? "bg-red-50 border-red-200"
               : "bg-white border-gray-200"
-          }`}
+            }`}
         >
 
           <div className="flex justify-between items-center">
@@ -292,11 +290,10 @@ const TeamMembers = ({ slug }) => {
 
             <div
               style={{ width: `${usagePercent}%` }}
-              className={`h-full transition-all duration-500 ${
-                limitReached
+              className={`h-full transition-all duration-500 ${limitReached
                   ? "bg-red-500"
                   : "bg-indigo-500"
-              }`}
+                }`}
             />
 
           </div>
@@ -404,13 +401,12 @@ const TeamMembers = ({ slug }) => {
 
                     <span
                       className={`px-2.5 py-1 text-xs font-medium rounded-full
-                      ${
-                        m.role === "OWNER"
+                      ${m.role === "OWNER"
                           ? "bg-purple-100 text-purple-700"
                           : m.role === "ADMIN"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
                     >
                       {m.role}
                     </span>

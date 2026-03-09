@@ -3,150 +3,268 @@ import { useParams } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
 
 const AdminProfessionalDetail = () => {
+
   const { id } = useParams();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // ================= LOAD =================
   useEffect(() => {
-    if (!id) {
-      setError("Invalid professional ID.");
-      setLoading(false);
-      return;
-    }
 
     const load = async () => {
       try {
-        setLoading(true);
-        setError("");
-
-        console.log("Loading professional id:", id);
 
         const res = await axiosInstance.get(
           `/auth/admin/professionals/${id}/`
         );
 
-        if (!res?.data) {
-          setError("Invalid response from server.");
-          return;
-        }
-
         setData(res.data);
+
       } catch (err) {
-        console.error("Failed to load professional:", err);
 
         setError(
           err?.response?.data?.detail ||
-            err?.response?.data?.message ||
-            "Professional not found"
+          "Professional not found"
         );
+
       } finally {
         setLoading(false);
       }
     };
 
     load();
+
   }, [id]);
 
-  // ================= UI STATES =================
 
   if (loading) {
     return (
-      <div className="p-8 text-gray-500">
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
         Loading professional…
       </div>
-    );
+    )
   }
 
   if (error) {
     return (
-      <div className="p-8 text-red-600 font-medium">
+      <div className="min-h-screen flex items-center justify-center text-red-600">
         {error}
       </div>
-    );
+    )
   }
 
-  if (!data) {
-    return (
-      <div className="p-8 text-gray-500">
-        No data available.
-      </div>
-    );
-  }
+  if (!data) return null;
 
-  // ================= MAIN UI =================
+
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">
-        Professional Details
-      </h1>
 
-      <div className="bg-white border rounded-2xl p-6 space-y-4 shadow-sm">
-        <Row label="Email" value={data.email} />
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white pb-20">
 
-        <Row
-          label="Qualification"
-          value={data.qualifications}
-        />
 
-        <Row
-          label="Specialization"
-          value={data.specialization}
-        />
+      {/* COVER */}
 
-        <Row
-          label="Experience"
-          value={
-            data.experience_years != null
-              ? `${data.experience_years} years`
-              : null
-          }
-        />
+      <div className="h-64 bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 rounded-b-3xl relative">
 
-        <Row label="Bio" value={data.bio} />
+        <div className="absolute bottom-[-40px] left-1/2 -translate-x-1/2">
 
-        <Row
-          label="LinkedIn"
-          value={data.linkdin_url}
-          isLink
-        />
+          <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center text-2xl font-bold shadow-xl ring-4 ring-blue-200">
+            {data.email?.[0]?.toUpperCase()}
+          </div>
 
-        <Row
-          label="Verified"
-          value={data.verified ? "Yes" : "No"}
-        />
+        </div>
+
       </div>
+
+
+      {/* PROFILE HEADER */}
+
+      <div className="max-w-6xl mx-auto pt-16 text-center">
+
+        <h1 className="text-2xl font-bold text-gray-900">
+          {data.email}
+        </h1>
+
+        <div className="mt-2">
+
+          {data.verified ? (
+            <span className="px-3 py-1 text-xs rounded-full bg-green-100 text-green-700">
+              Verified Professional
+            </span>
+          ) : (
+            <span className="px-3 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">
+              Verification Pending
+            </span>
+          )}
+
+        </div>
+
+      </div>
+
+
+      {/* STATS */}
+
+      <div className="max-w-5xl mx-auto mt-10 grid grid-cols-3 gap-6 px-6">
+
+        <StatCard
+          title="Experience"
+          value={`${data.experience_years || 0} yrs`}
+        />
+
+        <StatCard
+          title="Specialization"
+          value={data.specialization || "—"}
+        />
+
+        <StatCard
+          title="Qualification"
+          value={data.qualifications || "—"}
+        />
+
+      </div>
+
+
+      {/* MAIN GRID */}
+
+      <div className="max-w-6xl mx-auto mt-10 grid grid-cols-3 gap-8 px-6">
+
+
+        {/* SIDEBAR */}
+
+        <div className="bg-white border rounded-xl p-6 shadow-sm">
+
+          <h3 className="font-semibold mb-4">
+            About Professional
+          </h3>
+
+          <p className="text-sm text-gray-600 mb-6">
+            {data.bio || "No biography available."}
+          </p>
+
+          <InfoRow label="Email" value={data.email} />
+
+          <InfoRow
+            label="Experience"
+            value={
+              data.experience_years
+                ? `${data.experience_years} years`
+                : null
+            }
+          />
+
+          <InfoRow
+            label="Specialization"
+            value={data.specialization}
+          />
+
+          <InfoRow
+            label="Qualification"
+            value={data.qualifications}
+          />
+
+          <InfoRow
+            label="LinkedIn"
+            value={data.linkdin_url}
+            link
+          />
+
+        </div>
+
+
+        {/* RIGHT CONTENT */}
+
+        <div className="col-span-2 space-y-6">
+
+
+          {/* DETAILS */}
+
+          <div className="bg-white border rounded-xl p-6 shadow-sm">
+
+            <h3 className="font-semibold mb-4">
+              Professional Details
+            </h3>
+
+            <div className="grid grid-cols-2 gap-6">
+
+              <InfoRow
+                label="Email"
+                value={data.email}
+              />
+
+              <InfoRow
+                label="Verified"
+                value={data.verified ? "Yes" : "No"}
+              />
+
+            </div>
+
+          </div>
+
+
+          {/* ADMIN ACTIONS */}
+
+          <div className="bg-white border rounded-xl p-6 shadow-sm flex gap-4">
+
+            <button className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+              Verify Professional
+            </button>
+
+            <button className="px-5 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition">
+              Suspend Account
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
+
   );
+
 };
 
-// ================= ROW COMPONENT =================
 
-const Row = ({ label, value, isLink = false }) => (
-  <div className="flex justify-between border-b pb-2 gap-4">
-    <span className="text-gray-500 text-sm">{label}</span>
-
-    <span className="font-medium text-gray-900 text-sm text-right">
-      {value ? (
-        isLink ? (
-          <a
-            href={value}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            View Profile
-          </a>
-        ) : (
-          value
-        )
-      ) : (
-        "—"
-      )}
-    </span>
+const StatCard = ({ title, value }) => (
+  <div className="bg-white border rounded-xl p-5 shadow-sm text-center">
+    <div className="text-lg font-semibold text-gray-900">{value}</div>
+    <div className="text-xs text-gray-500 mt-1">{title}</div>
   </div>
+);
+
+
+const InfoRow = ({ label, value, link = false }) => (
+
+  <div className="flex justify-between text-sm py-2 border-b last:border-none">
+
+    <span className="text-gray-500">
+      {label}
+    </span>
+
+    {value ? (
+
+      link ? (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          View
+        </a>
+      ) : (
+        <span className="font-medium text-gray-900">
+          {value}
+        </span>
+      )
+
+    ) : (
+      <span className="text-gray-400">—</span>
+    )}
+
+  </div>
+
 );
 
 export default AdminProfessionalDetail;

@@ -15,10 +15,9 @@ const InviteValidatePage = () => {
   useEffect(() => {
 
     const runValidation = async () => {
-
       try {
 
-        // If token missing check pending invite
+        // If token missing check localStorage
         if (!token) {
 
           const pendingInvite = localStorage.getItem("pending_invite_token");
@@ -42,23 +41,19 @@ const InviteValidatePage = () => {
         const accessToken = localStorage.getItem("access");
         const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-        // USER NOT LOGGED IN
+        // User not logged in
         if (!accessToken) {
 
           localStorage.setItem("pending_invite_token", token);
-
           navigate(`/login?invite=${token}`);
-
           return;
         }
 
-        // USER LOGGED IN BUT EMAIL DIFFERENT
+        // Email mismatch
         if (user.email && res.data.email !== user.email) {
 
           localStorage.setItem("pending_invite_token", token);
-
           navigate(`/register?invite=${token}`);
-
           return;
         }
 
@@ -70,11 +65,8 @@ const InviteValidatePage = () => {
         );
 
       } finally {
-
         setLoading(false);
-
       }
-
     };
 
     runValidation();
@@ -90,17 +82,30 @@ const InviteValidatePage = () => {
 
       setAccepting(true);
 
-      await axiosInstance.post("/invitations/accept/", {
+      const res = await axiosInstance.post("/invitations/accept/", {
         token
       });
 
       localStorage.removeItem("pending_invite_token");
 
-      if (data.role === "OWNER" || data.role === "ADMIN") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/professional/dashboard");
+      /*
+        Backend should return something like:
+        {
+          workspace_slug: "acme"
+        }
+      */
+
+      const workspaceSlug =
+        res?.data?.workspace_slug ||
+        data?.workspace_slug ||
+        data?.slug;
+
+      if (!workspaceSlug) {
+        navigate("/dashboard");
+        return;
       }
+
+      navigate(`/workspace/${workspaceSlug}/dashboard`);
 
     } catch (err) {
 
@@ -110,16 +115,12 @@ const InviteValidatePage = () => {
       );
 
     } finally {
-
       setAccepting(false);
-
     }
-
   };
 
 
   return (
-
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
 
       <div className="w-full max-w-md">
@@ -128,6 +129,7 @@ const InviteValidatePage = () => {
           <h1 className="text-2xl font-bold text-gray-900">
             Slotify
           </h1>
+
           <p className="text-sm text-gray-500 mt-1">
             You've been invited to join a workspace
           </p>
@@ -179,7 +181,9 @@ const InviteValidatePage = () => {
                 disabled={accepting}
                 className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-black transition"
               >
-                {accepting ? "Joining workspace…" : "Accept Invitation"}
+                {accepting
+                  ? "Joining workspace…"
+                  : "Accept Invitation"}
               </button>
             </>
           )}
@@ -193,9 +197,7 @@ const InviteValidatePage = () => {
       </div>
 
     </div>
-
   );
-
 };
 
 export default InviteValidatePage;
