@@ -8,7 +8,9 @@ import {
   Crown,
   Eye,
   Mail,
-  Trash2
+  Trash2,
+  Users,
+  Search
 } from "lucide-react";
 
 const TeamMembers = ({ slug }) => {
@@ -23,6 +25,8 @@ const TeamMembers = ({ slug }) => {
 
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState("");
 
   const isSolo = workspaceType === "SOLO";
 
@@ -46,6 +50,7 @@ const TeamMembers = ({ slug }) => {
   /* ================= FETCH MEMBERS ================= */
 
   const fetchMembers = async () => {
+
     try {
 
       setLoading(true);
@@ -67,6 +72,7 @@ const TeamMembers = ({ slug }) => {
       setLoading(false);
 
     }
+
   };
 
   /* ================= FETCH WORKSPACE ================= */
@@ -121,6 +127,12 @@ const TeamMembers = ({ slug }) => {
 
   };
 
+  /* ================= SEARCH FILTER ================= */
+
+  const filteredMembers = members.filter((m) =>
+    m.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (!slug) {
     return (
       <div className="p-8 text-center text-red-600">
@@ -131,6 +143,81 @@ const TeamMembers = ({ slug }) => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
+
+      {/* ================= HEADER ================= */}
+
+      <div className="flex justify-between items-center">
+
+        <div>
+
+          <h1 className="text-3xl font-bold">
+            Team Members
+          </h1>
+
+          <p className="text-gray-500">
+            Manage your workspace team
+          </p>
+
+          {/* Stats */}
+
+          <div className="flex gap-4 mt-4">
+
+            <div className="bg-white border rounded-lg px-4 py-2 shadow-sm">
+              <p className="text-xs text-gray-500">Members</p>
+              <p className="font-semibold text-lg">{membersUsed}</p>
+            </div>
+
+            <div className="bg-white border rounded-lg px-4 py-2 shadow-sm">
+              <p className="text-xs text-gray-500">Seats Remaining</p>
+              <p className="font-semibold text-lg">{membersRemaining}</p>
+            </div>
+
+            <div className="bg-white border rounded-lg px-4 py-2 shadow-sm">
+              <p className="text-xs text-gray-500">Plan</p>
+              <p className="font-semibold text-lg">{planName}</p>
+            </div>
+
+          </div>
+
+        </div>
+
+        {!isSolo && (
+
+          <button
+            onClick={() => {
+
+              if (limitReached) {
+                navigate("/billing");
+              } else {
+                setShowModal(true);
+              }
+
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold
+            ${
+              limitReached
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 shadow-lg"
+            }`}
+          >
+
+            {limitReached ? (
+              <>
+                <Crown size={18} />
+                Upgrade Plan
+              </>
+            ) : (
+              <>
+                <UserPlus size={18} />
+                Invite Member
+              </>
+            )}
+
+          </button>
+
+        )}
+
+      </div>
 
       {/* ================= PLAN CARD ================= */}
 
@@ -191,17 +278,10 @@ const TeamMembers = ({ slug }) => {
 
             <button
               onClick={() => navigate("/billing")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-white font-semibold
-              ${
-                limitReached
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-indigo-600 hover:bg-indigo-700"
-              }`}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700"
             >
-
               <Crown size={16} />
               Upgrade Plan
-
             </button>
 
           </div>
@@ -212,7 +292,7 @@ const TeamMembers = ({ slug }) => {
 
             <div
               style={{ width: `${usagePercent}%` }}
-              className={`h-full ${
+              className={`h-full transition-all duration-500 ${
                 limitReached
                   ? "bg-red-500"
                   : "bg-indigo-500"
@@ -225,57 +305,18 @@ const TeamMembers = ({ slug }) => {
 
       )}
 
-      {/* ================= HEADER ================= */}
+      {/* ================= SEARCH ================= */}
 
-      <div className="flex justify-between items-center">
+      <div className="flex items-center gap-2 border rounded-lg px-4 py-2 w-72">
 
-        <div>
+        <Search size={16} className="text-gray-400" />
 
-          <h1 className="text-3xl font-bold">
-            Team Members
-          </h1>
-
-          <p className="text-gray-500">
-            Manage your workspace team
-          </p>
-
-        </div>
-
-        {!isSolo && (
-
-          <button
-            onClick={() => {
-
-              if (limitReached) {
-                navigate("/billing");
-              } else {
-                setShowModal(true);
-              }
-
-            }}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold
-            ${
-              limitReached
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-indigo-600 hover:bg-indigo-700"
-            }`}
-          >
-
-            {limitReached ? (
-              <>
-                <Crown size={18} />
-                Upgrade Plan
-              </>
-            ) : (
-              <>
-                <UserPlus size={18} />
-                Invite Member
-              </>
-            )}
-
-          </button>
-
-        )}
+        <input
+          placeholder="Search members..."
+          className="outline-none text-sm w-full"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
 
       </div>
 
@@ -289,7 +330,7 @@ const TeamMembers = ({ slug }) => {
             Loading members...
           </div>
 
-        ) : members.length === 0 ? (
+        ) : filteredMembers.length === 0 ? (
 
           <div className="p-12 text-center">
 
@@ -299,7 +340,7 @@ const TeamMembers = ({ slug }) => {
             />
 
             <p className="text-gray-500">
-              No members in this workspace
+              No members found
             </p>
 
           </div>
@@ -334,17 +375,23 @@ const TeamMembers = ({ slug }) => {
 
             <tbody className="divide-y">
 
-              {members.map((m) => (
+              {filteredMembers.map((m) => (
 
                 <tr
                   key={m.id}
-                  className="hover:bg-gray-50"
+                  className="hover:bg-indigo-50 transition duration-150"
                 >
 
                   <td className="px-6 py-4 flex items-center gap-3">
 
-                    <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
-                      {m.email?.[0]?.toUpperCase()}
+                    <div className="relative w-9 h-9">
+
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold shadow">
+                        {m.email?.[0]?.toUpperCase()}
+                      </div>
+
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-white rounded-full"></span>
+
                     </div>
 
                     <span className="font-medium">
@@ -355,7 +402,16 @@ const TeamMembers = ({ slug }) => {
 
                   <td className="px-6 py-4">
 
-                    <span className="px-2 py-1 text-xs rounded-md bg-gray-100">
+                    <span
+                      className={`px-2.5 py-1 text-xs font-medium rounded-full
+                      ${
+                        m.role === "OWNER"
+                          ? "bg-purple-100 text-purple-700"
+                          : m.role === "ADMIN"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
                       {m.role}
                     </span>
 
@@ -364,9 +420,7 @@ const TeamMembers = ({ slug }) => {
                   <td className="px-6 py-4 text-gray-500 text-sm">
 
                     {m.joined_at
-                      ? new Date(
-                          m.joined_at
-                        ).toLocaleDateString()
+                      ? new Date(m.joined_at).toLocaleDateString()
                       : "-"}
 
                   </td>
