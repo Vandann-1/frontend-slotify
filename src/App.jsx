@@ -19,6 +19,12 @@ import ProfessionalDashboard from "./features/professional/ProfessionalDashboard
 import ProfessionalProfile from "./features/professional/ProfessionalProfile";
 import AdminProfessionalDetail from "./features/professional/AdminProfessionalDeatail";
 
+
+// =====================================
+    //  PLANS PAGES
+// =====================================
+import PlansPage from "./features/Plans/PlansPage";
+
 /* ==============================
    WORKSPACE PAGES
 ============================== */
@@ -52,7 +58,13 @@ function App() {
           <Route path="/invite-accept/:token" element={<InviteValidatePage />} />
           <Route path="/professional/profile" element={<ProfessionalProfile />} />
           <Route path="/admin/professionals/:id" element={<AdminProfessionalDetail />} />
+
+          
+
+<Route path="/plans" element={<PlansPage />} />
         </Route>
+
+
 
         {/* ================= WORKSPACE (PROTECTED) ================= */}
         <Route

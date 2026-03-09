@@ -11,19 +11,27 @@ const InviteValidatePage = () => {
   const [accepting, setAccepting] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   useEffect(() => {
 
-    if (!token) {
-      setError("Invalid invitation link.");
-      setLoading(false);
-      return;
-    }
-
-    const validateInvite = async () => {
+    const runValidation = async () => {
 
       try {
+
+        // If token missing check pending invite
+        if (!token) {
+
+          const pendingInvite = localStorage.getItem("pending_invite_token");
+
+          if (pendingInvite) {
+            navigate(`/invite/${pendingInvite}`);
+            return;
+          }
+
+          setError("Invalid invitation link.");
+          setLoading(false);
+          return;
+        }
 
         const res = await axiosInstance.post("/invitations/validate/", {
           token
@@ -34,14 +42,23 @@ const InviteValidatePage = () => {
         const accessToken = localStorage.getItem("access");
         const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+        // USER NOT LOGGED IN
         if (!accessToken) {
+
           localStorage.setItem("pending_invite_token", token);
-          setShowRegisterModal(true);
+
+          navigate(`/login?invite=${token}`);
+
           return;
         }
 
+        // USER LOGGED IN BUT EMAIL DIFFERENT
         if (user.email && res.data.email !== user.email) {
+
+          localStorage.setItem("pending_invite_token", token);
+
           navigate(`/register?invite=${token}`);
+
           return;
         }
 
@@ -60,10 +77,9 @@ const InviteValidatePage = () => {
 
     };
 
-    validateInvite();
+    runValidation();
 
   }, [token, navigate]);
-
 
 
   const handleAccept = async () => {
@@ -160,7 +176,7 @@ const InviteValidatePage = () => {
 
               <button
                 onClick={handleAccept}
-                disabled={accepting || showRegisterModal}
+                disabled={accepting}
                 className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-black transition"
               >
                 {accepting ? "Joining workspace…" : "Accept Invitation"}
@@ -176,34 +192,10 @@ const InviteValidatePage = () => {
 
       </div>
 
-      {showRegisterModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-
-          <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl">
-
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              Create an Account
-            </h2>
-
-            <p className="text-sm text-gray-500 mb-6">
-              You must create an account to join this workspace.
-            </p>
-
-            <button
-              onClick={() => navigate(`/register?invite=${token}`)}
-              className="w-full bg-gray-900 text-white py-2.5 rounded-lg"
-            >
-              Register to Join
-            </button>
-
-          </div>
-
-        </div>
-      )}
-
     </div>
 
   );
+
 };
 
 export default InviteValidatePage;
