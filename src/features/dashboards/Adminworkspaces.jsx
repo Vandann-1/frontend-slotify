@@ -1,5 +1,6 @@
+import PlansPage from "../Plans/PlansPage";
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -32,19 +33,23 @@ const TABS = {
 
 /**
  * Note: Add this to your index.css or a global style file for the thin scrollbar
- * * .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+ * .custom-scrollbar::-webkit-scrollbar { width: 5px; }
  * .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
  * .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
  */
 
 export default function AdminWorkspace() {
+
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [collapsed, setCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState(TABS.DASHBOARD);
+
+  // Derive active page from URL — single source of truth
+  const page = location.pathname.split("/").pop();
 
   const handleLogout = () => {
-    // Clear localStorage/Auth tokens here if necessary
     navigate("/");
   };
 
@@ -58,7 +63,7 @@ export default function AdminWorkspace() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
-      
+
       {/* ================= FIXED SIDEBAR ================= */}
       <aside
         className={`transition-all duration-300 ease-in-out h-full flex-shrink-0 flex flex-col shadow-2xl z-20 ${
@@ -86,41 +91,45 @@ export default function AdminWorkspace() {
             icon={<LayoutDashboard size={20} />}
             label="Dashboard"
             collapsed={collapsed}
-            active={activeTab === TABS.DASHBOARD}
-            onClick={() => setActiveTab(TABS.DASHBOARD)}
+            active={page === TABS.DASHBOARD}
+            onClick={() => navigate(`/admin/workspace/${slug}/dashboard`)}
           />
           <SidebarItem
             icon={<Users size={20} />}
             label="Team Members"
             collapsed={collapsed}
-            active={activeTab === TABS.TEAM}
-            onClick={() => setActiveTab(TABS.TEAM)}
+            active={page === TABS.TEAM}
+            onClick={() => navigate(`/admin/workspace/${slug}/team`)}
           />
           <SidebarItem
             icon={<Calendar size={20} />}
             label="Bookings"
             collapsed={collapsed}
-            active={activeTab === TABS.BOOKINGS}
-            onClick={() => setActiveTab(TABS.BOOKINGS)}
+            active={page === TABS.BOOKINGS}
+            onClick={() => navigate(`/admin/workspace/${slug}/bookings`)}
           />
           <SidebarItem
             icon={<IdCard size={20} />}
             label="Plans"
             collapsed={collapsed}
-            active={activeTab === TABS.PLANS}
-            onClick={() => setActiveTab(TABS.PLANS)}
-            />
-            
+            active={page === TABS.PLANS}
+            onClick={() => navigate(`/admin/workspace/${slug}/plans`)}
+          />
+
           <div className="pt-6 pb-2 px-4">
-            {!collapsed && <p className="text-[10px] font-bold text-blue-300 uppercase tracking-widest opacity-70">Configuration</p>}
+            {!collapsed && (
+              <p className="text-[10px] font-bold text-blue-300 uppercase tracking-widest opacity-70">
+                Configuration
+              </p>
+            )}
           </div>
-          
+
           <SidebarItem
             icon={<Settings size={20} />}
             label="Settings"
             collapsed={collapsed}
-            active={activeTab === TABS.SETTINGS}
-            onClick={() => setActiveTab(TABS.SETTINGS)}
+            active={page === TABS.SETTINGS}
+            onClick={() => navigate(`/admin/workspace/${slug}/settings`)}
           />
         </nav>
 
@@ -137,8 +146,8 @@ export default function AdminWorkspace() {
               </div>
             )}
           </div>
-          
-          <button 
+
+          <button
             onClick={handleLogout}
             className={`
               group flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300
@@ -154,15 +163,15 @@ export default function AdminWorkspace() {
 
       {/* ================= MAIN CONTENT WRAPPER ================= */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        
+
         {/* Fixed Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 shrink-0">
           <div className="flex items-center bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 w-64 shadow-sm">
             <Search size={16} className="text-slate-400" />
-            <input 
-               type="text" 
-               placeholder="Search..." 
-               className="bg-transparent border-none focus:ring-0 text-sm ml-2 w-full outline-none"
+            <input
+              type="text"
+              placeholder="Search..."
+              className="bg-transparent border-none focus:ring-0 text-sm ml-2 w-full outline-none"
             />
           </div>
 
@@ -179,11 +188,11 @@ export default function AdminWorkspace() {
 
         {/* Scrollable Page Content */}
         <main className="flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar scroll-smooth">
-          {activeTab === TABS.DASHBOARD && <DashboardHome slug={slug} />}
-          {activeTab === TABS.TEAM && <TeamMembers slug={slug} />}
-          {activeTab === TABS.BOOKINGS && <PlaceholderTab title="Bookings" icon={<Calendar size={48} />} />}
-          {activeTab === TABS.PLANS && <PlaceholderTab title="plans" icon={<IdCard size={48}/>}/>}
-          {activeTab === TABS.SETTINGS && <PlaceholderTab title="Settings" icon={<Settings size={48} />} />}
+          {page === TABS.DASHBOARD && <DashboardHome slug={slug} />}
+          {page === TABS.TEAM     && <TeamMembers slug={slug} />}
+          {page === TABS.PLANS    && <PlansPage slug={slug} />}
+          {page === TABS.BOOKINGS && <PlaceholderTab title="Bookings" icon={<Calendar size={48} />} />}
+          {page === TABS.SETTINGS && <PlaceholderTab title="Settings" icon={<Settings size={48} />} />}
         </main>
       </div>
     </div>
@@ -197,8 +206,8 @@ function SidebarItem({ icon, label, collapsed, active, onClick }) {
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 ${
-        active 
-          ? "bg-white text-blue-700 shadow-lg" 
+        active
+          ? "bg-white text-blue-700 shadow-lg"
           : "text-blue-100 hover:bg-white/10"
       }`}
     >
@@ -216,33 +225,33 @@ function DashboardHome({ slug }) {
       <div>
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Admin Dashboard</h1>
         <p className="text-slate-500 mt-1 uppercase text-xs font-bold tracking-widest">
-            Workspace: <span className="text-blue-600">{slug.replace(/-/g, " ")}</span>
+          Workspace: <span className="text-blue-600">{slug.replace(/-/g, " ")}</span>
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Bookings" value="1,284" growth="+12.5%" icon={<Calendar className="text-blue-600" />} />
-        <StatCard title="Team Members" value="12" growth="+2" icon={<Users className="text-indigo-600" />} />
-        <StatCard title="Total Revenue" value="$8,450" growth="+18.2%" icon={<TrendingUp className="text-emerald-600" />} />
-        <StatCard title="Pending Review" value="5" growth="-1" icon={<Clock className="text-amber-600" />} />
+        <StatCard title="Team Members"   value="12"    growth="+2"     icon={<Users className="text-indigo-600" />} />
+        <StatCard title="Total Revenue"  value="$8,450" growth="+18.2%" icon={<TrendingUp className="text-emerald-600" />} />
+        <StatCard title="Pending Review" value="5"     growth="-1"     icon={<Clock className="text-amber-600" />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-           <h3 className="font-bold text-slate-800 text-lg mb-6">Activity Overview</h3>
-           <div className="h-64 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 gap-2">
-              <TrendingUp size={32} />
-              <span className="font-medium">Data visualization coming soon</span>
-           </div>
+          <h3 className="font-bold text-slate-800 text-lg mb-6">Activity Overview</h3>
+          <div className="h-64 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 gap-2">
+            <TrendingUp size={32} />
+            <span className="font-medium">Data visualization coming soon</span>
+          </div>
         </div>
-        
+
         <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 text-lg mb-6">Recent Activity</h3>
           <div className="space-y-6">
             <ActivityItem text="New member joined: Alex" time="15m ago" type="success" />
-            <ActivityItem text="Booking #442 cancelled" time="2h ago" type="error" />
-            <ActivityItem text="Server Updated to v1.2" time="5h ago" type="info" />
-            <ActivityItem text="Admin changed settings" time="1d ago" type="info" />
+            <ActivityItem text="Booking #442 cancelled"  time="2h ago"  type="error"   />
+            <ActivityItem text="Server Updated to v1.2"  time="5h ago"  type="info"    />
+            <ActivityItem text="Admin changed settings"  time="1d ago"  type="info"    />
           </div>
         </div>
       </div>
