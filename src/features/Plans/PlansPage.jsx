@@ -122,7 +122,7 @@ export default function PlansPage() {
             const isZero = w === "0";
             priceNode = (
               <div className="flex items-end gap-0.5 leading-none">
-                <span className="text-slate-400 text-sm font-medium mb-2">₹</span>
+                <span className="text-slate-500 text-sm font-medium mb-2">$</span>
                 <span className="text-[52px] font-semibold text-slate-900 leading-none"
                   style={{ letterSpacing:"-0.04em" }}>
                   {isZero ? "0" : w}
