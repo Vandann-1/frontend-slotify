@@ -19,11 +19,32 @@ function timeAgo(dateStr) {
   if (hours < 1)   return "Just now";
   if (hours < 24)  return `${hours}h ago`;
   if (days < 30)   return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    day: "numeric", month: "short", year: "numeric",
+  });
 }
 
-function initials(email = "") {
-  return email.slice(0, 2).toUpperCase();
+function initials(email = "", firstName = "", lastName = "") {
+  if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  if (firstName)             return firstName.slice(0, 2).toUpperCase();
+  return email.slice(0, 2).toUpperCase() || "PR";
+}
+
+/** Safely format a join date from multiple possible field names */
+function joinDate(data) {
+  const raw = data.created_at || data.date_joined || data.joined_at || null;
+  if (!raw) return null;
+  return new Date(raw).toLocaleDateString("en-IN", {
+    day: "numeric", month: "short", year: "numeric",
+  });
+}
+
+/** Display name from profile fields */
+function displayName(data) {
+  if (data.first_name && data.last_name) return `${data.first_name} ${data.last_name}`;
+  if (data.first_name)                   return data.first_name;
+  if (data.name)                         return data.name;
+  return data.email || "—";
 }
 
 
@@ -86,7 +107,6 @@ function ActionButton({ onClick, variant = "default", icon, children, loading })
   );
 }
 
-// confirm modal
 function ConfirmModal({ title, message, confirmLabel, variant, onConfirm, onCancel }) {
   return (
     <div
@@ -139,24 +159,28 @@ const AdminProfessionalDetail = () => {
 
   const [actionLoading, setActionLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState("");
-  const [confirm,       setConfirm]       = useState(null); // { type: "verify"|"suspend" }
+  const [confirm,       setConfirm]       = useState(null);
   const [menuOpen,      setMenuOpen]      = useState(false);
 
+  // ── fetch professional ──
+  const loadData = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await axiosInstance.get(`/auth/admin/professionals/${id}/`);
+      setData(res.data);
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Professional not found.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await axiosInstance.get(`/auth/admin/professionals/${id}/`);
-        setData(res.data);
-      } catch (err) {
-        setError(err?.response?.data?.detail || "Professional not found.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // close menu on outside click
   useEffect(() => {
     const close = () => setMenuOpen(false);
     document.addEventListener("click", close);
@@ -169,7 +193,8 @@ const AdminProfessionalDetail = () => {
     setActionSuccess("");
     try {
       await axiosInstance.post(`/auth/admin/professionals/${id}/verify/`);
-      setData((prev) => ({ ...prev, verified: true }));
+      // re-fetch so ALL fields (including profile fields) are fresh
+      await loadData();
       setActionSuccess("Professional verified successfully.");
     } catch (err) {
       setError(err?.response?.data?.detail || "Verification failed.");
@@ -184,7 +209,8 @@ const AdminProfessionalDetail = () => {
     setActionSuccess("");
     try {
       await axiosInstance.post(`/auth/admin/professionals/${id}/suspend/`);
-      setData((prev) => ({ ...prev, suspended: true }));
+      // re-fetch so ALL fields are fresh
+      await loadData();
       setActionSuccess("Account suspended.");
     } catch (err) {
       setError(err?.response?.data?.detail || "Suspension failed.");
@@ -225,6 +251,13 @@ const AdminProfessionalDetail = () => {
   const isVerified  = !!data.verified;
   const isSuspended = !!data.suspended;
 
+  // ── resolve profile fields (handles typo in linkdin_url from backend) ──
+  const linkedInUrl     = data.linkedin_url || data.linkdin_url || "";
+  const experienceYears = data.experience_years ?? null;
+  const specialization  = data.specialization  || "";
+  const qualifications  = data.qualifications  || "";
+  const bio             = data.bio             || "";
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
@@ -238,38 +271,49 @@ const AdminProfessionalDetail = () => {
           Back
         </button>
 
-        {/* more menu */}
-        <div className="relative" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          {/* manual refresh button */}
           <button
-            onClick={() => setMenuOpen((p) => !p)}
+            onClick={loadData}
             className="w-8 h-8 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:bg-gray-50 transition-colors"
+            title="Refresh profile"
           >
-            <MoreVertical size={15} />
+            <Loader2 size={14} className={actionLoading ? "animate-spin" : ""} />
           </button>
-          {menuOpen && (
-            <div className="absolute right-0 top-10 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-44">
-              <button
-                onClick={() => { setMenuOpen(false); navigate(`/admin/professionals/${id}/edit`); }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-              >
-                <User size={13} className="text-gray-400" />
-                Edit profile
-              </button>
-              <button
-                onClick={() => { setMenuOpen(false); setConfirm({ type: "suspend" }); }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-red-500 hover:bg-red-50"
-              >
-                <ShieldOff size={13} />
-                Suspend account
-              </button>
-            </div>
-          )}
+
+          {/* more menu */}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setMenuOpen((p) => !p)}
+              className="w-8 h-8 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:bg-gray-50 transition-colors"
+            >
+              <MoreVertical size={15} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-10 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-44">
+                <button
+                  onClick={() => { setMenuOpen(false); navigate(`/admin/professionals/${id}/edit`); }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  <User size={13} className="text-gray-400" />
+                  Edit profile
+                </button>
+                <button
+                  onClick={() => { setMenuOpen(false); setConfirm({ type: "suspend" }); }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-red-500 hover:bg-red-50"
+                >
+                  <ShieldOff size={13} />
+                  Suspend account
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 space-y-6">
 
-        {/* ── success / error banners ── */}
+        {/* ── banners ── */}
         {actionSuccess && (
           <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-xs font-medium px-4 py-3 rounded-xl">
             <CheckCircle2 size={14} className="flex-shrink-0" />
@@ -285,17 +329,14 @@ const AdminProfessionalDetail = () => {
 
         {/* ── profile header card ── */}
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-          {/* colour strip */}
           <div className="h-24 bg-blue-700" />
 
           <div className="px-6 pb-6">
-            {/* avatar overlapping strip */}
             <div className="flex items-end justify-between -mt-10 mb-4">
               <div className="w-16 h-16 rounded-2xl bg-gray-900 border-4 border-white flex items-center justify-center text-white text-xl font-bold shadow-md">
-                {initials(data.email)}
+                {initials(data.email, data.first_name, data.last_name)}
               </div>
 
-              {/* status badge */}
               <div className="flex items-center gap-2 mb-1">
                 {isSuspended ? (
                   <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-200 text-xs font-semibold text-red-600">
@@ -314,36 +355,29 @@ const AdminProfessionalDetail = () => {
             </div>
 
             {/* name / email */}
-            <h1 className="text-lg font-bold text-gray-900">
-              {data.first_name && data.last_name
-                ? `${data.first_name} ${data.last_name}`
-                : data.email
-              }
-            </h1>
+            <h1 className="text-lg font-bold text-gray-900">{displayName(data)}</h1>
             <p className="text-sm text-gray-400 mt-0.5">{data.email}</p>
 
-            {/* bio */}
-            {data.bio && (
-              <p className="text-sm text-gray-600 mt-3 leading-relaxed max-w-xl">
-                {data.bio}
-              </p>
+            {/* bio — now uses resolved variable */}
+            {bio && (
+              <p className="text-sm text-gray-600 mt-3 leading-relaxed max-w-xl">{bio}</p>
             )}
 
-            {/* quick meta pills */}
+            {/* meta pills */}
             <div className="flex flex-wrap gap-2 mt-4">
-              {data.specialization && (
+              {specialization && (
                 <span className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-100 rounded-lg text-xs font-medium text-blue-700">
-                  <Star size={10} /> {data.specialization}
+                  <Star size={10} /> {specialization}
                 </span>
               )}
-              {data.experience_years && (
+              {experienceYears !== null && experienceYears !== "" && (
                 <span className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-lg text-xs font-medium text-gray-600">
-                  <Briefcase size={10} /> {data.experience_years} yrs experience
+                  <Briefcase size={10} /> {experienceYears} yrs experience
                 </span>
               )}
-              {data.qualifications && (
+              {qualifications && (
                 <span className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-lg text-xs font-medium text-gray-600">
-                  <GraduationCap size={10} /> {data.qualifications}
+                  <GraduationCap size={10} /> {qualifications}
                 </span>
               )}
             </div>
@@ -355,22 +389,22 @@ const AdminProfessionalDetail = () => {
           <StatCard
             icon={<Briefcase size={14} />}
             label="Experience"
-            value={data.experience_years ? `${data.experience_years} yrs` : null}
+            value={experienceYears !== null && experienceYears !== "" ? `${experienceYears} yrs` : null}
           />
           <StatCard
             icon={<Star size={14} />}
             label="Specialization"
-            value={data.specialization}
+            value={specialization || null}
           />
           <StatCard
             icon={<GraduationCap size={14} />}
             label="Qualification"
-            value={data.qualifications}
+            value={qualifications || null}
           />
           <StatCard
             icon={<Calendar size={14} />}
             label="Joined"
-            value={timeAgo(data.created_at || data.date_joined)}
+            value={timeAgo(data.created_at || data.date_joined || data.joined_at)}
           />
         </div>
 
@@ -380,10 +414,11 @@ const AdminProfessionalDetail = () => {
           {/* contact info */}
           <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 mb-3">Contact info</h3>
-            <InfoRow label="Email"          value={data.email} />
-            <InfoRow label="Phone"          value={data.phone} />
-            <InfoRow label="LinkedIn"       value={data.linkdin_url} link />
-            <InfoRow label="Website"        value={data.website_url} link />
+            <InfoRow label="Email"    value={data.email} />
+            <InfoRow label="Phone"    value={data.phone} />
+            {/* handles both linkedin_url and the typo'd linkdin_url from backend */}
+            <InfoRow label="LinkedIn" value={linkedInUrl} link={!!linkedInUrl} />
+            <InfoRow label="Website"  value={data.website_url} link={!!data.website_url} />
           </div>
 
           {/* professional details */}
@@ -392,10 +427,13 @@ const AdminProfessionalDetail = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
               <InfoRow label="Verified"       value={isVerified  ? "Yes" : "No"} />
               <InfoRow label="Suspended"      value={isSuspended ? "Yes" : "No"} />
-              <InfoRow label="Experience"     value={data.experience_years ? `${data.experience_years} years` : null} />
-              <InfoRow label="Specialization" value={data.specialization} />
-              <InfoRow label="Qualification"  value={data.qualifications} />
-              <InfoRow label="Member since"   value={data.created_at ? new Date(data.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null} />
+              <InfoRow
+                label="Experience"
+                value={experienceYears !== null && experienceYears !== "" ? `${experienceYears} years` : null}
+              />
+              <InfoRow label="Specialization" value={specialization || null} />
+              <InfoRow label="Qualification"  value={qualifications || null} />
+              <InfoRow label="Member since"   value={joinDate(data)} />
             </div>
           </div>
         </div>
@@ -461,7 +499,6 @@ const AdminProfessionalDetail = () => {
           onCancel={() => setConfirm(null)}
         />
       )}
-
       {confirm?.type === "suspend" && (
         <ConfirmModal
           title="Suspend this account?"

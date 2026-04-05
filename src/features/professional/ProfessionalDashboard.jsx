@@ -1,984 +1,581 @@
 import { useEffect, useState } from "react";
 import professionalApi from "../../api/professionalApi";
-import { useNavigate } from "react-router-dom";
+import { useDynamicNav } from "./main";
 import {
-  LayoutDashboard, User, LogOut, Menu, X,
-  CalendarDays, Clock, CreditCard, Users,
-  Settings, ChevronRight, Building2, CheckCircle2,
-  AlertCircle, Loader2, Bell, Star, Briefcase,
-  ArrowUpRight, Plus, Search, Filter, Edit2,
-  Trash2, Save, Mail, Phone, MapPin, Globe,
-  Lock, Eye, EyeOff, Check, Zap, Shield,
-  TrendingUp, Download, MoreHorizontal, XCircle,
-  BookOpen, ChevronDown, ChevronUp, RefreshCw,
-  ToggleLeft, ToggleRight, Info,
+  Loader2, Calendar, Clock, User, CreditCard,
+  ChevronRight, CheckCircle2, XCircle, ExternalLink,
+  Briefcase, Star, Bell, Settings, LogOut, Menu, X, Check,
+  Stethoscope, BookOpen, Activity, FileText, TrendingUp,
+  BrainCircuit, ClipboardList, Users,
 } from "lucide-react";
 
-/* ─────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────── */
-function Avatar({ name = "", email = "", size = "md" }) {
-  const src = name || email;
-  const letters = (src || "PR").slice(0, 2).toUpperCase();
-  const sz = { sm:"w-8 h-8 text-xs", md:"w-10 h-10 text-sm", lg:"w-14 h-14 text-base" }[size] || "w-10 h-10 text-sm";
-  return (
-    <div className={`${sz} rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold flex-shrink-0 select-none`}>
-      {letters}
-    </div>
-  );
-}
+/* ─── palette ───────────────────────────────────────── */
+const C = {
+  blue:         "#1a56db",
+  blueDark:     "#1240a8",
+  blueLight:    "#e8effd",
+  blueMid:      "#c7d9fb",
+  white:        "#ffffff",
+  offWhite:     "#f7f8fa",
+  border:       "#dde3ef",
+  borderStrong: "#c2cde0",
+  textPrimary:  "#0d1726",
+  textSecond:   "#4b5a74",
+  textMuted:    "#8896b0",
+  greenDot:     "#22c55e",
+  red:          "#ef4444",
+  sidebarW:     240,
+};
 
-function Badge({ label, color = "gray" }) {
-  const map = {
-    green:  "bg-green-100 text-green-700 border-green-200",
-    blue:   "bg-blue-100 text-blue-700 border-blue-200",
-    amber:  "bg-amber-100 text-amber-700 border-amber-200",
-    red:    "bg-red-100 text-red-700 border-red-200",
-    violet: "bg-violet-100 text-violet-700 border-violet-200",
-    gray:   "bg-gray-100 text-gray-600 border-gray-200",
-  };
-  return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${map[color] || map.gray}`}>
-      {label}
-    </span>
-  );
-}
+/* ════════════════════════════════════════════════════
+   ROOT
+════════════════════════════════════════════════════ */
+export default function ProfessionalDashboard() {
+  const [profile,   setProfile]   = useState(null);
+  const [form,      setForm]      = useState({});
+  const [loading,   setLoading]   = useState(true);
+  const [saving,    setSaving]    = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [railOpen,  setRailOpen]  = useState(false);
 
-function StatCard({ label, value, sub, icon, accent }) {
-  const acc = {
-    blue:   ["bg-blue-50",   "text-blue-600"],
-    green:  ["bg-green-50",  "text-green-600"],
-    amber:  ["bg-amber-50",  "text-amber-600"],
-    violet: ["bg-violet-50", "text-violet-600"],
-    rose:   ["bg-rose-50",   "text-rose-600"],
-  }[accent] || ["bg-gray-50","text-gray-500"];
-  return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:-translate-y-0.5 transition-transform">
-      <div className={`w-9 h-9 rounded-xl ${acc[0]} flex items-center justify-center mb-3`}>
-        <span className={acc[1]}>{icon}</span>
-      </div>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
-      <p className="text-2xl font-black text-gray-900 mt-0.5">{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
-    </div>
-  );
-}
-
-function SectionHeader({ title, subtitle, action }) {
-  return (
-    <div className="flex items-center justify-between mb-6">
-      <div>
-        <h2 className="text-lg font-black text-gray-900">{title}</h2>
-        {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function EmptyState({ icon, title, desc, action }) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-14 flex flex-col items-center gap-4 text-center shadow-sm">
-      <div className="w-16 h-16 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-center">
-        <span className="text-gray-300">{icon}</span>
-      </div>
-      <div>
-        <p className="text-sm font-bold text-gray-700">{title}</p>
-        <p className="text-xs text-gray-400 mt-1 max-w-xs">{desc}</p>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────
-   MOCK DATA
-───────────────────────────────────────── */
-const MOCK_BOOKINGS = [
-  { id:1, client:"Rahul Desai",    service:"Consultation", date:"2025-07-22", time:"10:00 AM", status:"confirmed",  amount:500  },
-  { id:2, client:"Sneha Patil",    service:"Follow-up",    date:"2025-07-22", time:"11:30 AM", status:"pending",    amount:250  },
-  { id:3, client:"Ankit Sharma",   service:"Consultation", date:"2025-07-23", time:"02:00 PM", status:"confirmed",  amount:500  },
-  { id:4, client:"Priya Nair",     service:"Review",       date:"2025-07-24", time:"04:00 PM", status:"cancelled",  amount:300  },
-  { id:5, client:"Vikram Mehta",   service:"Consultation", date:"2025-07-25", time:"09:00 AM", status:"confirmed",  amount:500  },
-  { id:6, client:"Deepa Joshi",    service:"Follow-up",    date:"2025-07-26", time:"03:00 PM", status:"completed",  amount:250  },
-];
-
-const MOCK_CLIENTS = [
-  { id:1, name:"Rahul Desai",  email:"rahul@example.com",  phone:"+91 98765 43210", sessions:4, last:"2025-07-22", status:"active"   },
-  { id:2, name:"Sneha Patil",  email:"sneha@example.com",  phone:"+91 87654 32109", sessions:2, last:"2025-07-20", status:"active"   },
-  { id:3, name:"Ankit Sharma", email:"ankit@example.com",  phone:"+91 76543 21098", sessions:7, last:"2025-07-18", status:"active"   },
-  { id:4, name:"Priya Nair",   email:"priya@example.com",  phone:"+91 65432 10987", sessions:1, last:"2025-07-10", status:"inactive" },
-];
-
-const WEEK_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-const TIME_SLOTS = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"];
-
-const PLANS = [
-  {
-    id:"starter", name:"Starter", price:0,    period:"forever",
-    color:"gray", highlight:false,
-    features:["1 Workspace","20 bookings/mo","Basic profile","Email support","Public booking page"],
-    badge:null,
-  },
-  {
-    id:"pro", name:"Pro", price:999, period:"per month",
-    color:"blue", highlight:true,
-    features:["5 Workspaces","Unlimited bookings","Priority listing","Calendar sync","SMS reminders","Analytics dashboard","Priority support"],
-    badge:"Most Popular",
-  },
-  {
-    id:"elite", name:"Elite", price:2499, period:"per month",
-    color:"violet", highlight:false,
-    features:["Unlimited Workspaces","Unlimited bookings","Featured profile","Custom branding","API access","Dedicated manager","White-label option"],
-    badge:"Best Value",
-  },
-];
-
-/* ─────────────────────────────────────────
-   TAB CONTENT COMPONENTS
-───────────────────────────────────────── */
-
-/* ── OVERVIEW ── */
-function OverviewTab({ user, memberships, setActiveTab }) {
-  const recent = MOCK_BOOKINGS.slice(0,4);
-  return (
-    <div className="space-y-6">
-      {/* stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Workspaces"    value={memberships.length} sub="active memberships"    icon={<Building2 size={16}/>}    accent="blue"   />
-        <StatCard label="Bookings"      value="24"                 sub="this month"            icon={<CalendarDays size={16}/>} accent="green"  />
-        <StatCard label="Clients"       value={MOCK_CLIENTS.length} sub="total clients"        icon={<Users size={16}/>}        accent="violet" />
-        <StatCard label="Earnings"      value="₹12,400"            sub="this month"            icon={<TrendingUp size={16}/>}   accent="amber"  />
-      </div>
-
-      {/* profile nudge */}
-      {(!user?.bio || !user?.specialization) && (
-        <div className="flex items-start justify-between gap-4 bg-blue-50 border border-blue-100 rounded-2xl p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <User size={14} className="text-blue-600"/>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-blue-800">Complete your profile</p>
-              <p className="text-xs text-blue-600/80 mt-0.5">Add bio, specialization and experience to get discovered.</p>
-            </div>
-          </div>
-          <button onClick={()=>setActiveTab("profile")} className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-white border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex-shrink-0">
-            Update <ArrowUpRight size={11}/>
-          </button>
-        </div>
-      )}
-
-      {/* recent bookings */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <p className="text-sm font-bold text-gray-900">Recent Bookings</p>
-          <button onClick={()=>setActiveTab("bookings")} className="text-xs text-blue-600 font-semibold hover:underline">View all</button>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {recent.map(b => (
-            <div key={b.id} className="flex items-center justify-between px-5 py-3.5">
-              <div className="flex items-center gap-3">
-                <Avatar name={b.client} size="sm"/>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">{b.client}</p>
-                  <p className="text-[11px] text-gray-400">{b.service} · {b.date} {b.time}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-gray-800">₹{b.amount}</span>
-                <Badge label={b.status} color={b.status==="confirmed"?"green":b.status==="pending"?"amber":b.status==="cancelled"?"red":"blue"}/>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* workspaces */}
-      {memberships.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <p className="text-sm font-bold text-gray-900">Your Workspaces</p>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {memberships.map((m,i) => (
-              <div key={i} className="flex items-center justify-between px-5 py-3.5">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                    {(m.workspace_name||"WS").slice(0,2).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{m.workspace_name||"Workspace"}</p>
-                    <p className="text-[11px] text-gray-400">{m.role||"PROFESSIONAL"}</p>
-                  </div>
-                </div>
-                <Badge label="Active" color="green"/>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── BOOKINGS ── */
-function BookingsTab() {
-  const [filter, setFilter]   = useState("all");
-  const [search, setSearch]   = useState("");
-
-  const statusFilters = ["all","confirmed","pending","completed","cancelled"];
-  const filtered = MOCK_BOOKINGS.filter(b =>
-    (filter==="all" || b.status===filter) &&
-    (b.client.toLowerCase().includes(search.toLowerCase()) || b.service.toLowerCase().includes(search.toLowerCase()))
-  );
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader
-        title="Bookings"
-        subtitle={`${MOCK_BOOKINGS.length} total bookings`}
-        action={
-          <button className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors">
-            <Plus size={13}/> New Booking
-          </button>
-        }
-      />
-
-      {/* filters + search */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input
-            value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="Search client or service…"
-            className="w-full pl-8 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-400 bg-white"
-          />
-        </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {statusFilters.map(s=>(
-            <button key={s} onClick={()=>setFilter(s)}
-              className={`text-xs font-semibold px-3 py-2 rounded-xl capitalize transition-colors ${filter===s?"bg-blue-600 text-white":"bg-white border border-gray-200 text-gray-500 hover:border-blue-300"}`}>
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* table */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-5 py-3">Client</th>
-                <th className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 py-3">Service</th>
-                <th className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 py-3">Date & Time</th>
-                <th className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 py-3">Amount</th>
-                <th className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 py-3">Status</th>
-                <th className="px-4 py-3"/>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.length === 0 ? (
-                <tr><td colSpan={6} className="text-center text-sm text-gray-400 py-12">No bookings found</td></tr>
-              ) : filtered.map(b=>(
-                <tr key={b.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar name={b.client} size="sm"/>
-                      <span className="font-semibold text-gray-800">{b.client}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-600">{b.service}</td>
-                  <td className="px-4 py-3.5 text-gray-600 whitespace-nowrap">{b.date}<br/><span className="text-xs text-gray-400">{b.time}</span></td>
-                  <td className="px-4 py-3.5 font-bold text-gray-800">₹{b.amount}</td>
-                  <td className="px-4 py-3.5">
-                    <Badge label={b.status} color={b.status==="confirmed"?"green":b.status==="pending"?"amber":b.status==="cancelled"?"red":"blue"}/>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
-                      <MoreHorizontal size={14}/>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── AVAILABILITY ── */
-function AvailabilityTab() {
-  const [schedule, setSchedule] = useState(() =>
-    WEEK_DAYS.reduce((acc, day) => ({
-      ...acc,
-      [day]: { enabled: !["Saturday","Sunday"].includes(day), from:"09:00", to:"17:00" }
-    }), {})
-  );
-  const [saved, setSaved] = useState(false);
-
-  const toggle  = (day) => setSchedule(s => ({ ...s, [day]: { ...s[day], enabled: !s[day].enabled } }));
-  const setTime = (day, field, val) => setSchedule(s => ({ ...s, [day]: { ...s[day], [field]: val } }));
-  const save    = () => { setSaved(true); setTimeout(()=>setSaved(false), 2500); };
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader
-        title="Availability"
-        subtitle="Set your weekly schedule and time slots"
-        action={
-          <button onClick={save} className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all ${saved?"bg-green-500 text-white":"bg-blue-600 hover:bg-blue-700 text-white"}`}>
-            {saved ? <><Check size={13}/> Saved!</> : <><Save size={13}/> Save Schedule</>}
-          </button>
-        }
-      />
-
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
-          <div className="grid grid-cols-[140px_80px_1fr_1fr] gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            <span>Day</span><span>Active</span><span>From</span><span>To</span>
-          </div>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {WEEK_DAYS.map(day => (
-            <div key={day} className={`px-5 py-4 grid grid-cols-[140px_80px_1fr_1fr] gap-4 items-center transition-colors ${!schedule[day].enabled?"opacity-40":""}`}>
-              <span className="text-sm font-semibold text-gray-800">{day}</span>
-              <button onClick={()=>toggle(day)} className="flex items-center">
-                {schedule[day].enabled
-                  ? <ToggleRight size={24} className="text-blue-600"/>
-                  : <ToggleLeft  size={24} className="text-gray-300"/>
-                }
-              </button>
-              <select disabled={!schedule[day].enabled} value={schedule[day].from} onChange={e=>setTime(day,"from",e.target.value)}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 disabled:bg-gray-50 bg-white">
-                {TIME_SLOTS.map(t=><option key={t}>{t}</option>)}
-              </select>
-              <select disabled={!schedule[day].enabled} value={schedule[day].to} onChange={e=>setTime(day,"to",e.target.value)}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 disabled:bg-gray-50 bg-white">
-                {TIME_SLOTS.map(t=><option key={t}>{t}</option>)}
-              </select>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
-        <Info size={15} className="text-blue-500 flex-shrink-0 mt-0.5"/>
-        <p className="text-xs text-blue-700">Your availability is shown to clients when they book. Changes take effect immediately after saving.</p>
-      </div>
-    </div>
-  );
-}
-
-/* ── CLIENTS ── */
-function ClientsTab() {
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(null);
-
-  const filtered = MOCK_CLIENTS.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader
-        title="Clients"
-        subtitle={`${MOCK_CLIENTS.length} total clients`}
-        action={
-          <button className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors">
-            <Plus size={13}/> Add Client
-          </button>
-        }
-      />
-
-      <div className="relative">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-        <input value={search} onChange={e=>setSearch(e.target.value)}
-          placeholder="Search clients…"
-          className="w-full pl-8 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-400 bg-white"/>
-      </div>
-
-      <div className="grid gap-3">
-        {filtered.length === 0
-          ? <EmptyState icon={<Users size={26}/>} title="No clients found" desc="Try a different search term."/>
-          : filtered.map(c=>(
-            <div key={c.id} onClick={()=>setSelected(selected?.id===c.id?null:c)}
-              className="bg-white border border-gray-200 hover:border-blue-300 rounded-2xl p-4 cursor-pointer transition-all shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar name={c.name} size="md"/>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{c.name}</p>
-                    <p className="text-xs text-gray-400">{c.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right hidden sm:block">
-                    <p className="text-xs font-bold text-gray-700">{c.sessions} sessions</p>
-                    <p className="text-[10px] text-gray-400">Last: {c.last}</p>
-                  </div>
-                  <Badge label={c.status} color={c.status==="active"?"green":"gray"}/>
-                  {selected?.id===c.id ? <ChevronUp size={14} className="text-gray-400"/> : <ChevronDown size={14} className="text-gray-400"/>}
-                </div>
-              </div>
-
-              {selected?.id===c.id && (
-                <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <Mail size={12} className="text-gray-400"/> {c.email}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <Phone size={12} className="text-gray-400"/> {c.phone}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <CalendarDays size={12} className="text-gray-400"/> {c.sessions} sessions total
-                  </div>
-                  <div className="sm:col-span-3 flex gap-2 mt-1">
-                    <button className="text-xs font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
-                      View Bookings
-                    </button>
-                    <button className="text-xs font-semibold text-gray-500 border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
-                      Send Message
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        }
-      </div>
-    </div>
-  );
-}
-
-/* ── PLANS ── */
-function PlansTab() {
-  const [current, setCurrent] = useState("starter");
-  const [billing, setBilling] = useState("monthly");
-
-  return (
-    <div className="space-y-6">
-      <SectionHeader title="Plans & Billing" subtitle="Manage your subscription"/>
-
-      {/* current plan banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-5 flex items-center justify-between text-white">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <Zap size={18} className="text-white"/>
-          </div>
-          <div>
-            <p className="text-xs text-blue-200 font-semibold uppercase tracking-wide">Current Plan</p>
-            <p className="text-lg font-black capitalize">{current}</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-blue-200">Next billing</p>
-          <p className="text-sm font-bold">Aug 1, 2025</p>
-        </div>
-      </div>
-
-      {/* billing toggle */}
-      <div className="flex items-center justify-center gap-3">
-        <button onClick={()=>setBilling("monthly")}
-          className={`text-sm font-semibold px-4 py-2 rounded-xl transition-colors ${billing==="monthly"?"bg-blue-600 text-white":"text-gray-500 hover:bg-gray-100"}`}>
-          Monthly
-        </button>
-        <button onClick={()=>setBilling("yearly")}
-          className={`text-sm font-semibold px-4 py-2 rounded-xl transition-colors flex items-center gap-2 ${billing==="yearly"?"bg-blue-600 text-white":"text-gray-500 hover:bg-gray-100"}`}>
-          Yearly
-          <span className="text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">–20%</span>
-        </button>
-      </div>
-
-      {/* plan cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {PLANS.map(p => {
-          const isCurrent = current === p.id;
-          const price = billing==="yearly" ? Math.round(p.price*0.8) : p.price;
-          return (
-            <div key={p.id}
-              className={`relative rounded-2xl border-2 p-6 flex flex-col gap-4 transition-all
-                ${p.highlight ? "border-blue-500 bg-gradient-to-b from-blue-600 to-blue-700 shadow-xl shadow-blue-200" : "border-gray-200 bg-white shadow-sm"}
-              `}>
-              {p.badge && (
-                <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-black px-3 py-1 rounded-full border whitespace-nowrap
-                  ${p.highlight ? "bg-white text-blue-600 border-blue-200" : "bg-gray-900 text-white border-gray-800"}`}>
-                  {p.badge}
-                </div>
-              )}
-
-              <div>
-                <p className={`text-xs font-bold uppercase tracking-widest ${p.highlight?"text-blue-200":"text-gray-400"}`}>{p.name}</p>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className={`text-3xl font-black ${p.highlight?"text-white":"text-gray-900"}`}>
-                    {price === 0 ? "Free" : `₹${price}`}
-                  </span>
-                  {price > 0 && <span className={`text-xs ${p.highlight?"text-blue-200":"text-gray-400"}`}>/{billing==="yearly"?"yr":"mo"}</span>}
-                </div>
-              </div>
-
-              <div className={`border-t ${p.highlight?"border-white/20":"border-gray-100"} pt-4 space-y-2.5 flex-1`}>
-                {p.features.map(f=>(
-                  <div key={f} className="flex items-center gap-2">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0
-                      ${p.highlight?"bg-white/20":"bg-green-100"}`}>
-                      <Check size={9} className={p.highlight?"text-white":"text-green-600"}/>
-                    </div>
-                    <span className={`text-xs ${p.highlight?"text-blue-100":"text-gray-600"}`}>{f}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={()=>setCurrent(p.id)}
-                disabled={isCurrent}
-                className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all
-                  ${isCurrent
-                    ? p.highlight
-                      ? "bg-white/20 text-white/60 cursor-default"
-                      : "bg-gray-100 text-gray-400 cursor-default"
-                    : p.highlight
-                      ? "bg-white text-blue-600 hover:shadow-md"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
-              >
-                {isCurrent ? "Current Plan" : `Upgrade to ${p.name}`}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* billing history */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <p className="text-sm font-bold text-gray-900">Billing History</p>
-          <button className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 font-medium">
-            <Download size={12}/> Export
-          </button>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {[
-            { date:"Jul 1, 2025",  amount:"₹0",   plan:"Starter", status:"paid" },
-            { date:"Jun 1, 2025",  amount:"₹0",   plan:"Starter", status:"paid" },
-            { date:"May 1, 2025",  amount:"₹0",   plan:"Starter", status:"paid" },
-          ].map((r,i)=>(
-            <div key={i} className="flex items-center justify-between px-5 py-3.5">
-              <div>
-                <p className="text-sm font-semibold text-gray-800">{r.plan} Plan</p>
-                <p className="text-xs text-gray-400">{r.date}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-gray-800">{r.amount}</span>
-                <Badge label={r.status} color="green"/>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── PROFILE ── */
-function ProfileTab({ user }) {
-  const [form, setForm]   = useState({
-    first_name:        user?.first_name        || "",
-    last_name:         user?.last_name         || "",
-    email:             user?.email             || "",
-    phone:             user?.phone             || "",
-    bio:               user?.bio               || "",
-    specialization:    user?.specialization    || "",
-    experience_years:  user?.experience_years  || "",
-    location:          user?.location          || "",
-    website:           user?.website           || "",
-  });
-  const [saved,   setSaved]   = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const handle = e => setForm(p=>({...p,[e.target.name]:e.target.value}));
-  const save   = async () => {
-    setLoading(true);
-    await new Promise(r=>setTimeout(r,800));
-    setLoading(false);
-    setSaved(true);
-    setTimeout(()=>setSaved(false),2500);
+  const loadProfile = async () => {
+    try {
+      const res = await professionalApi.getMyProfile();
+      setProfile(res.data);
+      setForm(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const Field = ({ label, name, type="text", placeholder="", textarea=false, half=false }) => (
-    <div className={half?"":"col-span-2 sm:col-span-1"}>
-      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
-      {textarea
-        ? <textarea name={name} value={form[name]} onChange={handle} placeholder={placeholder} rows={4}
-            className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-blue-400 resize-none bg-white"/>
-        : <input type={type} name={name} value={form[name]} onChange={handle} placeholder={placeholder}
-            className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-blue-400 bg-white"/>
-      }
-    </div>
-  );
+  useEffect(() => { loadProfile(); }, []);
 
-  return (
-    <div className="space-y-5">
-      <SectionHeader title="My Profile" subtitle="Manage your professional information"/>
+  // ── dynamic nav from specialization ──
+  const specialization = profile?.specialization || "";
+  const { fixed, dynamic } = useDynamicNav(specialization);
 
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        {/* avatar header */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 px-6 py-6 flex items-center gap-5">
-          <Avatar name={form.first_name || form.email} size="lg"/>
-          <div>
-            <p className="text-base font-black text-gray-900">{form.first_name} {form.last_name}</p>
-            <p className="text-sm text-gray-500">{form.email}</p>
-            <button className="mt-2 text-xs font-semibold text-blue-600 border border-blue-200 bg-white hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5">
-              <Edit2 size={10}/> Change Photo
-            </button>
-          </div>
-        </div>
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-        {/* form */}
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="First Name"        name="first_name"       placeholder="John"/>
-          <Field label="Last Name"         name="last_name"        placeholder="Doe"/>
-          <Field label="Email"             name="email"            type="email" placeholder="you@example.com"/>
-          <Field label="Phone"             name="phone"            placeholder="+91 98765 43210"/>
-          <Field label="Specialization"    name="specialization"   placeholder="e.g. Cardiologist, Life Coach"/>
-          <Field label="Experience (years)"name="experience_years" type="number" placeholder="5"/>
-          <Field label="Location"          name="location"         placeholder="Mumbai, India"/>
-          <Field label="Website"           name="website"          placeholder="https://yoursite.com"/>
-          <div className="sm:col-span-2">
-            <Field label="Bio" name="bio" placeholder="Tell clients about yourself…" textarea/>
-          </div>
-        </div>
-
-        <div className="px-6 pb-5">
-          <button onClick={save} disabled={loading}
-            className={`flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl transition-all
-              ${saved ? "bg-green-500 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
-            {loading ? <Loader2 size={14} className="animate-spin"/> : saved ? <Check size={14}/> : <Save size={14}/>}
-            {loading ? "Saving…" : saved ? "Saved!" : "Save Changes"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── SETTINGS ── */
-function SettingsTab() {
-  const [showPass,    setShowPass]    = useState(false);
-  const [notifs,      setNotifs]      = useState({ email:true, sms:false, push:true, reminders:true });
-  const [passForm,    setPassForm]    = useState({ current:"", next:"", confirm:"" });
-  const [passSaved,   setPassSaved]   = useState(false);
-  const [passLoading, setPassLoading] = useState(false);
-  const [passError,   setPassError]   = useState("");
-
-  const toggleNotif = key => setNotifs(n=>({...n,[key]:!n[key]}));
-
-  const savePassword = async () => {
-    setPassError("");
-    if (passForm.next !== passForm.confirm) { setPassError("Passwords do not match."); return; }
-    if (passForm.next.length < 6) { setPassError("Password must be at least 6 characters."); return; }
-    setPassLoading(true);
-    await new Promise(r=>setTimeout(r,800));
-    setPassLoading(false);
-    setPassSaved(true);
-    setPassForm({ current:"", next:"", confirm:"" });
-    setTimeout(()=>setPassSaved(false),2500);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await professionalApi.upsertMyProfile({
+        qualifications:   form.qualifications,
+        specialization:   form.specialization,
+        bio:              form.bio,
+        linkdin_url:      form.linkdin_url,
+        experience_years: form.experience_years ? Number(form.experience_years) : null,
+      });
+      alert("Profile updated");
+      await loadProfile();
+    } catch (err) {
+      console.error(err);
+      alert("Save failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const Toggle = ({ enabled, onToggle }) => (
-    <button onClick={onToggle} className="flex-shrink-0">
-      {enabled
-        ? <ToggleRight size={26} className="text-blue-600"/>
-        : <ToggleLeft  size={26} className="text-gray-300"/>
-      }
-    </button>
-  );
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader title="Settings" subtitle="Manage notifications and account security"/>
-
-      {/* notifications */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <p className="text-sm font-bold text-gray-900">Notifications</p>
-          <p className="text-xs text-gray-400 mt-0.5">Choose how you want to be notified</p>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {[
-            { key:"email",     label:"Email Notifications",    desc:"Booking confirmations and updates via email"   },
-            { key:"sms",       label:"SMS Notifications",      desc:"Receive SMS alerts for new bookings"           },
-            { key:"push",      label:"Push Notifications",     desc:"Browser push notifications for real-time alerts"},
-            { key:"reminders", label:"Booking Reminders",      desc:"Get reminded 1 hour before appointments"       },
-          ].map(n=>(
-            <div key={n.key} className="flex items-center justify-between px-5 py-4">
-              <div>
-                <p className="text-sm font-semibold text-gray-800">{n.label}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{n.desc}</p>
-              </div>
-              <Toggle enabled={notifs[n.key]} onToggle={()=>toggleNotif(n.key)}/>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* change password */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <p className="text-sm font-bold text-gray-900">Change Password</p>
-          <p className="text-xs text-gray-400 mt-0.5">Update your account password</p>
-        </div>
-        <div className="p-5 space-y-3">
-          {passError && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-xs font-medium px-4 py-2.5 rounded-xl">
-              <AlertCircle size={13}/> {passError}
-            </div>
-          )}
-          {[
-            { label:"Current Password", key:"current" },
-            { label:"New Password",     key:"next"    },
-            { label:"Confirm Password", key:"confirm" },
-          ].map(f=>(
-            <div key={f.key}>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">{f.label}</label>
-              <div className="relative">
-                <input
-                  type={showPass?"text":"password"}
-                  value={passForm[f.key]}
-                  onChange={e=>setPassForm(p=>({...p,[f.key]:e.target.value}))}
-                  placeholder="••••••••"
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm pr-10 outline-none focus:border-blue-400 bg-white"
-                />
-                {f.key === "current" && (
-                  <button type="button" onClick={()=>setShowPass(!showPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    {showPass ? <EyeOff size={14}/> : <Eye size={14}/>}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-          <button onClick={savePassword} disabled={passLoading}
-            className={`flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl mt-1 transition-all
-              ${passSaved?"bg-green-500 text-white":"bg-blue-600 hover:bg-blue-700 text-white"}`}>
-            {passLoading ? <Loader2 size={14} className="animate-spin"/> : passSaved ? <Check size={14}/> : <Lock size={14}/>}
-            {passLoading ? "Updating…" : passSaved ? "Updated!" : "Update Password"}
-          </button>
-        </div>
-      </div>
-
-      {/* danger zone */}
-      <div className="bg-white border border-red-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-red-100">
-          <p className="text-sm font-bold text-red-600">Danger Zone</p>
-        </div>
-        <div className="p-5 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-gray-800">Delete Account</p>
-            <p className="text-xs text-gray-400 mt-0.5">Permanently delete your account and all data. This cannot be undone.</p>
-          </div>
-          <button className="flex items-center gap-1.5 text-xs font-bold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 px-3.5 py-2 rounded-xl transition-colors flex-shrink-0">
-            <Trash2 size={12}/> Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════
-   MAIN DASHBOARD
-═══════════════════════════════════════════════════ */
-const ProfessionalDashboard = () => {
-  const navigate = useNavigate();
-  const user = (() => { try { return JSON.parse(localStorage.getItem("user")||"{}"); } catch { return {}; } })();
-
-  const [loading,     setLoading]     = useState(true);
-  const [memberships, setMemberships] = useState([]);
-  const [collapsed,   setCollapsed]   = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
-  const [activeTab,   setActiveTab]   = useState("overview");
-  const [error,       setError]       = useState("");
-
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        const res  = await professionalApi.getMyMemberships();
-        const data = res?.data;
-        if (mounted) setMemberships(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if (mounted) setError("Failed to load workspaces.");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-    load();
-    return () => { mounted = false; };
-  }, []);
-
-  const handleLogout = () => { localStorage.clear(); navigate("/login"); };
-
-  const firstName = user?.first_name || user?.email?.split("@")[0] || "there";
-
-  const NAV = [
-    { id:"overview",      icon:<LayoutDashboard size={17}/>, label:"Overview"     },
-    { id:"bookings",      icon:<CalendarDays    size={17}/>, label:"Bookings"     },
-    { id:"availability",  icon:<Clock           size={17}/>, label:"Availability" },
-    { id:"clients",       icon:<Users           size={17}/>, label:"Clients"      },
-    { id:"plans",         icon:<CreditCard      size={17}/>, label:"Plans"        },
-    { id:"profile",       icon:<User            size={17}/>, label:"Profile"      },
-    { id:"settings",      icon:<Settings        size={17}/>, label:"Settings"     },
-  ];
-
-  const TAB_LABELS = { overview:"Overview", bookings:"Bookings", availability:"Availability", clients:"Clients", plans:"Plans & Billing", profile:"My Profile", settings:"Settings" };
-
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      {/* logo */}
-      <div className="flex items-center justify-between px-4 py-5 border-b border-blue-600/30 shrink-0">
-        {!collapsed && (
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-white/15 rounded-lg flex items-center justify-center">
-              <Zap size={13} className="text-white fill-white"/>
-            </div>
-            <span className="text-white font-black text-base tracking-tight">Slot<span className="text-blue-200">ify</span></span>
-          </div>
-        )}
-        <button onClick={()=>{setCollapsed(!collapsed);setMobileOpen(false);}}
-          className="text-blue-200 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition-colors">
-          {collapsed ? <Menu size={18}/> : <X size={18}/>}
-        </button>
-      </div>
-
-      {/* nav */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-0.5">
-        {!collapsed && (
-          <p className="text-[10px] font-bold text-blue-400/60 uppercase tracking-widest px-3 mb-2">Menu</p>
-        )}
-        {NAV.map(n => (
-          <button key={n.id} onClick={()=>{setActiveTab(n.id);setMobileOpen(false);}}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
-              ${activeTab===n.id
-                ? "bg-white text-blue-700 shadow-sm font-semibold"
-                : "text-blue-100 hover:bg-white/10 hover:text-white"
-              }
-              ${collapsed?"justify-center":""}`}>
-            <span className={activeTab===n.id?"text-blue-600":"text-blue-200"}>{n.icon}</span>
-            {!collapsed && n.label}
-          </button>
-        ))}
-      </nav>
-
-      {/* user + logout */}
-      <div className="px-3 pb-4 pt-3 border-t border-blue-600/30 shrink-0 space-y-1">
-        {!collapsed && (
-          <div className="flex items-center gap-2.5 px-3 py-2">
-            <Avatar name={user?.first_name||user?.email} size="sm"/>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-white truncate">{user?.first_name||user?.email||"Professional"}</p>
-              <p className="text-[10px] text-blue-200/70">Professional</p>
-            </div>
-          </div>
-        )}
-        <button onClick={handleLogout}
-          className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-100 hover:bg-red-500 hover:text-white transition-all text-sm font-medium ${collapsed?"justify-center":""}`}>
-          <LogOut size={17} className="group-hover:-translate-x-0.5 transition-transform"/>
-          {!collapsed && "Logout"}
-        </button>
-      </div>
+  if (loading) return (
+    <div style={S.loaderWrap}>
+      <Loader2 size={28} style={{ color: C.blue, animation: "spin 1s linear infinite" }} />
     </div>
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 size={22} className="animate-spin text-blue-600"/>
-      </div>
-    );
-  }
+  const firstName = profile?.user?.first_name || "Professional";
+  const initials  = firstName.slice(0, 2).toUpperCase();
+  const verified  = profile?.verified;
+
+  const navigate = (key) => { setActiveTab(key); setRailOpen(false); };
+
+  // Active label for breadcrumb — search both fixed and dynamic
+  const allNav    = [...fixed, ...dynamic];
+  const activeNav = allNav.find((n) => n.key === activeTab);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div style={S.root}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .pd-navbtn:hover { background: ${C.blueLight} !important; color: ${C.blue} !important; }
+        .pd-navbtn:hover svg { color: ${C.blue} !important; }
+        .pd-input:focus { outline: none; border-color: ${C.blue} !important; box-shadow: 0 0 0 3px ${C.blueMid}; }
+        .pd-savebtn:hover:not(:disabled) { background: ${C.blueDark} !important; }
+        .pd-savebtn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .pd-statcard:hover { box-shadow: 0 4px 16px rgba(26,86,219,0.10) !important; }
+        .pd-plancard { transition: box-shadow 0.15s, transform 0.15s; }
+        .pd-plancard:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,86,219,0.13) !important; }
+        .pd-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:98; }
+        @media (min-width: 768px) {
+          .pd-hamburger { display: none !important; }
+          .pd-sidebar { position: sticky !important; transform: none !important; }
+          .pd-closebtn { display: none !important; }
+        }
+        @media (max-width: 767px) {
+          .pd-sidebar { position: fixed !important; transform: translateX(-100%); }
+          .pd-sidebar.open { transform: translateX(0) !important; }
+          .pd-form-grid { grid-template-columns: 1fr !important; }
+        }
+        .pd-section { animation: fadeUp 0.28s ease both; }
+      `}</style>
 
-      {/* desktop sidebar */}
-      <aside className={`hidden md:flex flex-col flex-shrink-0 h-full bg-gradient-to-b from-blue-700 to-blue-800 transition-all duration-300 ${collapsed?"w-16":"w-56"}`}>
-        <SidebarContent/>
+      {railOpen && <div className="pd-overlay" onClick={() => setRailOpen(false)} />}
+
+      {/* ── SIDEBAR ── */}
+      <aside className={`pd-sidebar${railOpen ? " open" : ""}`} style={S.sidebar}>
+
+        {/* Logo */}
+        <div style={S.logoRow}>
+          <div style={S.logoBadge}>S</div>
+          <span style={S.logoText}>Slotify</span>
+          <button className="pd-closebtn" style={S.iconBtn} onClick={() => setRailOpen(false)}>
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* User card */}
+        <div style={S.userCard}>
+          <div style={S.userAvatar}>{initials}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={S.userName}>{firstName}</div>
+            <div style={S.userRole}>{specialization || "Professional"}</div>
+          </div>
+          {verified
+            ? <CheckCircle2 size={14} style={{ color: C.greenDot, flexShrink: 0 }} />
+            : <XCircle      size={14} style={{ color: C.red,      flexShrink: 0 }} />}
+        </div>
+
+        {/* ── FIXED nav ── */}
+        <nav style={S.navSection}>
+          <div style={S.navGroup}>MAIN MENU</div>
+          <NavGroup items={fixed} activeTab={activeTab} navigate={navigate} />
+        </nav>
+
+        {/* ── DYNAMIC nav — only shown if profession has features ── */}
+        {dynamic.length > 0 && (
+          <nav style={{ ...S.navSection, paddingTop: 0 }}>
+            <div style={S.navGroup}>{specialization.toUpperCase()}</div>
+            <NavGroup items={dynamic} activeTab={activeTab} navigate={navigate} />
+          </nav>
+        )}
+
+        <div style={{ flex: 1 }} />
+
+        {/* Bottom */}
+        <div style={S.sidebarBottom}>
+          <button className="pd-navbtn" style={S.navBtn}>
+            <Settings size={14} style={{ color: C.textMuted }} />
+            <span style={S.navBtnLabel}>Settings</span>
+          </button>
+          <button className="pd-navbtn" style={S.navBtn}>
+            <LogOut size={14} style={{ color: C.textMuted }} />
+            <span style={S.navBtnLabel}>Log Out</span>
+          </button>
+        </div>
+
+        <div style={S.verifiedStrip}>
+          <Briefcase size={11} style={{ color: C.blue }} />
+          <span>{profile?.experience_years || 0} yrs · {verified ? "Verified" : "Unverified"}</span>
+        </div>
       </aside>
 
-      {/* mobile overlay */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={()=>setMobileOpen(false)}>
-          <aside className="w-56 h-full bg-gradient-to-b from-blue-700 to-blue-800 flex flex-col" onClick={e=>e.stopPropagation()}>
-            <SidebarContent/>
-          </aside>
-        </div>
-      )}
+      {/* ── MAIN ── */}
+      <div style={S.main}>
 
-      {/* main */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Topbar */}
+        <header style={S.topbar}>
+          <button className="pd-hamburger" style={S.iconBtn} onClick={() => setRailOpen(true)}>
+            <Menu size={18} />
+          </button>
 
-        {/* topbar */}
-        <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-5 shrink-0 shadow-sm">
-          <div className="flex items-center gap-3">
-            <button className="md:hidden text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors" onClick={()=>setMobileOpen(true)}>
-              <Menu size={18}/>
-            </button>
-            <div>
-              <p className="text-sm font-black text-gray-900 leading-tight">
-                {TAB_LABELS[activeTab]}
-              </p>
-              <p className="text-[11px] text-gray-400">
-                {new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})}
-              </p>
-            </div>
+          <div style={S.breadcrumb}>
+            <span style={S.breadcrumbRoot}>Slotify</span>
+            <ChevronRight size={12} style={{ color: C.textMuted }} />
+            <span style={S.breadcrumbPage}>{activeNav?.label || "Dashboard"}</span>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <button className="relative w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-              <Bell size={15}/>
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"/>
-            </button>
-            <div className="flex items-center gap-2 pl-2 border-l border-gray-100">
-              <Avatar name={user?.first_name||user?.email} size="sm"/>
-              {!collapsed && (
-                <div className="hidden sm:block">
-                  <p className="text-xs font-bold text-gray-800 leading-tight">{user?.first_name || "Professional"}</p>
-                  <p className="text-[10px] text-gray-400">Professional</p>
-                </div>
-              )}
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={S.statusPill}>
+              <span style={{ ...S.dot, background: verified ? C.greenDot : C.red }} />
+              {verified ? "Verified" : "Unverified"}
             </div>
+            <button style={S.bellBtn}><Bell size={15} style={{ color: C.textSecond }} /></button>
           </div>
         </header>
 
-        {/* page body */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-          <div className="max-w-5xl mx-auto">
+        {/* Page */}
+        <main style={S.pageWrap}>
 
-            {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-xs font-medium px-4 py-3 rounded-xl mb-5">
-                <AlertCircle size={14} className="flex-shrink-0"/> {error}
+          {/* DASHBOARD */}
+          {activeTab === "dashboard" && (
+            <div className="pd-section" style={S.section}>
+              <PageHeader title={`Good day, ${firstName}`} sub="Here's an overview of your professional profile." />
+              <div style={S.statsGrid}>
+                <StatCard icon="🎯" label="Specialization" value={specialization || "—"} />
+                <StatCard icon="📅" label="Experience"     value={`${profile?.experience_years || 0} years`} />
+                <StatCard icon="🎓" label="Qualifications" value={profile?.qualifications || "—"} />
+                <StatCard icon="🔰" label="Status"         value={verified ? "Verified" : "Not Verified"} accent={verified} />
               </div>
-            )}
+              {profile?.bio && (
+                <div style={S.bioBox}>
+                  <div style={S.bioLabel}>BIO</div>
+                  <p style={S.bioText}>{profile.bio}</p>
+                </div>
+              )}
+              {profile?.linkdin_url && (
+                <a href={profile.linkdin_url} target="_blank" rel="noreferrer" style={S.linkedinLink}>
+                  <ExternalLink size={12} /> LinkedIn Profile
+                </a>
+              )}
+            </div>
+          )}
 
-            {activeTab === "overview"     && <OverviewTab     user={user} memberships={memberships} setActiveTab={setActiveTab}/>}
-            {activeTab === "bookings"     && <BookingsTab/>}
-            {activeTab === "availability" && <AvailabilityTab/>}
-            {activeTab === "clients"      && <ClientsTab/>}
-            {activeTab === "plans"        && <PlansTab/>}
-            {activeTab === "profile"      && <ProfileTab user={user}/>}
-            {activeTab === "settings"     && <SettingsTab/>}
+          {/* BOOKINGS */}
+          {activeTab === "bookings" && (
+            <div className="pd-section" style={S.section}>
+              <PageHeader title="Bookings" sub="View and manage all your appointments." />
+              <EmptyState icon={<Calendar size={30} style={{ color: C.blue }} />}
+                message="No bookings yet. Once clients schedule with you, they'll appear here." />
+            </div>
+          )}
 
-          </div>
+          {/* AVAILABILITY */}
+          {activeTab === "availability" && (
+            <div className="pd-section" style={S.section}>
+              <PageHeader title="Availability" sub="Define when you're open for bookings." />
+              <EmptyState icon={<Clock size={30} style={{ color: C.blue }} />}
+                message="No slots configured. Add your weekly schedule to start accepting bookings." />
+            </div>
+          )}
+
+          {/* PROFILE */}
+          {activeTab === "profile" && (
+            <div className="pd-section" style={S.section}>
+              <PageHeader title="Edit Profile" sub="Update your professional information." />
+              <div style={S.formCard}>
+                <div className="pd-form-grid" style={S.formGrid}>
+                  <FormField label="Qualifications">
+                    <input className="pd-input" name="qualifications" value={form.qualifications || ""} onChange={handleChange} placeholder="e.g. MD, PhD, CFA" style={S.input} />
+                  </FormField>
+                  <FormField label="Specialization">
+                    <input className="pd-input" name="specialization" value={form.specialization || ""} onChange={handleChange} placeholder="e.g. Cardiologist" style={S.input} />
+                  </FormField>
+                  <FormField label="Years of Experience">
+                    <input className="pd-input" type="number" name="experience_years" value={form.experience_years || ""} onChange={handleChange} placeholder="e.g. 8" style={S.input} />
+                  </FormField>
+                  <FormField label="LinkedIn URL">
+                    <input className="pd-input" name="linkdin_url" value={form.linkdin_url || ""} onChange={handleChange} placeholder="https://linkedin.com/in/..." style={S.input} />
+                  </FormField>
+                </div>
+                <FormField label="Bio">
+                  <textarea className="pd-input" name="bio" value={form.bio || ""} onChange={handleChange} placeholder="Describe your professional background..." rows={4} style={{ ...S.input, resize: "vertical" }} />
+                </FormField>
+                <div style={S.formFooter}>
+                  <button className="pd-savebtn" onClick={handleSave} disabled={saving} style={S.saveBtn}>
+                    {saving
+                      ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Saving…</>
+                      : <><Check size={13} /> Save Changes</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PLANS */}
+          {activeTab === "plans" && (
+            <div className="pd-section" style={S.section}>
+              <PageHeader title="Plans & Billing" sub="Choose the plan that fits your practice." />
+              <div style={S.plansGrid}>
+                <PlanCard name="Starter"      price="Free"   period=""       features={["Up to 5 bookings/month","Basic profile page","Email support"]} />
+                <PlanCard name="Professional" price="₹999"   period="/month" features={["Unlimited bookings","Verified badge","Priority support","Analytics"]} highlight />
+                <PlanCard name="Enterprise"   price="Custom" period=""       features={["Everything in Pro","Dedicated manager","Custom integrations","SLA"]} />
+              </div>
+            </div>
+          )}
+
+          {/* ── DYNAMIC PAGES — feature tabs ── */}
+          {dynamic.map(({ key, label, icon: Icon }) =>
+            activeTab === key ? (
+              <div key={key} className="pd-section" style={S.section}>
+                <PageHeader title={label} sub={`Manage your ${label.toLowerCase()} here.`} />
+                <EmptyState
+                  icon={<Icon size={30} style={{ color: C.blue }} />}
+                  message={`${label} feature is coming soon. Check back after setup.`}
+                />
+              </div>
+            ) : null
+          )}
+
         </main>
       </div>
     </div>
   );
-};
+}
 
-export default ProfessionalDashboard;
+/* ─── NavGroup — shared by fixed + dynamic ───────── */
+function NavGroup({ items, activeTab, navigate }) {
+  return items.map(({ key, label, icon: Icon }) => {
+    const active = activeTab === key;
+    return (
+      <button
+        key={key}
+        className="pd-navbtn"
+        onClick={() => navigate(key)}
+        style={{ ...S.navBtn, ...(active ? S.navBtnActive : {}) }}
+      >
+        <Icon size={15} style={{ color: active ? C.blue : C.textMuted, flexShrink: 0 }} />
+        <span style={S.navBtnLabel}>{label}</span>
+        {active && <div style={S.activeBar} />}
+      </button>
+    );
+  });
+}
+
+/* ─── SUB-COMPONENTS ──────────────────────────────── */
+function PageHeader({ title, sub }) {
+  return (
+    <div style={{ marginBottom: 26 }}>
+      <h1 style={{ fontSize: 21, fontWeight: 700, color: C.textPrimary, marginBottom: 4, fontFamily: "'IBM Plex Sans', sans-serif", letterSpacing: "-0.3px" }}>{title}</h1>
+      <p  style={{ fontSize: 13, color: C.textMuted, fontFamily: "'IBM Plex Sans', sans-serif" }}>{sub}</p>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, accent }) {
+  return (
+    <div className="pd-statcard" style={{
+      background: C.white,
+      border: `1px solid ${accent ? C.blueMid : C.border}`,
+      borderRadius: 10,
+      padding: "18px 16px",
+      display: "flex", flexDirection: "column", gap: 8,
+      boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+      transition: "box-shadow 0.15s",
+    }}>
+      <span style={{ fontSize: 20 }}>{icon}</span>
+      <div style={{ fontSize: 14, fontWeight: 700, color: accent ? C.blue : C.textPrimary, fontFamily: "'IBM Plex Sans', sans-serif", wordBreak: "break-word" }}>{value}</div>
+      <div style={{ fontSize: 10, color: C.textMuted, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", fontFamily: "'IBM Plex Sans', sans-serif" }}>{label}</div>
+    </div>
+  );
+}
+
+function FormField({ label, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label style={{ fontSize: 10, fontWeight: 700, color: C.textSecond, letterSpacing: "0.7px", textTransform: "uppercase", fontFamily: "'IBM Plex Sans', sans-serif" }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function EmptyState({ icon, message }) {
+  return (
+    <div style={{
+      background: C.white, border: `1.5px dashed ${C.borderStrong}`,
+      borderRadius: 12, padding: "60px 32px",
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center",
+    }}>
+      <div style={{ background: C.blueLight, borderRadius: "50%", padding: 16 }}>{icon}</div>
+      <p style={{ fontSize: 13, color: C.textMuted, maxWidth: 300, lineHeight: 1.65, fontFamily: "'IBM Plex Sans', sans-serif" }}>{message}</p>
+    </div>
+  );
+}
+
+function PlanCard({ name, price, period, features, highlight }) {
+  return (
+    <div className="pd-plancard" style={{
+      background: highlight ? C.blue : C.white,
+      border: `1px solid ${highlight ? C.blue : C.border}`,
+      borderRadius: 12, padding: "26px 22px",
+      display: "flex", flexDirection: "column", gap: 14,
+      position: "relative",
+      boxShadow: highlight ? "0 8px 28px rgba(26,86,219,0.22)" : "0 1px 3px rgba(0,0,0,0.04)",
+    }}>
+      {highlight && (
+        <div style={{
+          position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)",
+          background: C.textPrimary, color: C.white, borderRadius: 20,
+          padding: "3px 13px", fontSize: 10, fontWeight: 700,
+          display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap",
+          fontFamily: "'IBM Plex Sans', sans-serif", letterSpacing: "0.5px",
+        }}>
+          <Star size={9} fill="white" /> MOST POPULAR
+        </div>
+      )}
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: highlight ? "rgba(255,255,255,0.65)" : C.textMuted, marginBottom: 8, fontFamily: "'IBM Plex Sans', sans-serif" }}>{name}</div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+          <span style={{ fontSize: 26, fontWeight: 700, color: highlight ? C.white : C.textPrimary, fontFamily: "'IBM Plex Mono', monospace" }}>{price}</span>
+          <span style={{ fontSize: 13, color: highlight ? "rgba(255,255,255,0.55)" : C.textMuted, fontFamily: "'IBM Plex Sans', sans-serif" }}>{period}</span>
+        </div>
+      </div>
+      <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 9, flex: 1 }}>
+        {features.map(f => (
+          <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: highlight ? "rgba(255,255,255,0.85)" : C.textSecond, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+            <CheckCircle2 size={13} style={{ color: highlight ? C.white : C.blue, flexShrink: 0, marginTop: 1 }} />
+            {f}
+          </li>
+        ))}
+      </ul>
+      <button style={{
+        padding: "10px", background: highlight ? C.white : C.blue,
+        color: highlight ? C.blue : C.white, border: "none",
+        borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: "pointer",
+        fontFamily: "'IBM Plex Sans', sans-serif",
+      }}>
+        {highlight ? "Upgrade Now" : "Get Started"}
+      </button>
+    </div>
+  );
+}
+
+/* ─── STYLES ──────────────────────────────────────── */
+const S = {
+  root: {
+    display: "flex", minHeight: "100vh",
+    background: C.offWhite,
+    fontFamily: "'IBM Plex Sans', sans-serif",
+    color: C.textPrimary,
+  },
+  loaderWrap: {
+    height: "100vh", display: "flex",
+    alignItems: "center", justifyContent: "center",
+    background: C.white,
+  },
+  sidebar: {
+    width: C.sidebarW, minWidth: C.sidebarW,
+    background: C.white,
+    borderRight: `1px solid ${C.border}`,
+    display: "flex", flexDirection: "column",
+    height: "100vh", top: 0, left: 0,
+    zIndex: 100, overflowY: "auto",
+    transition: "transform 0.22s cubic-bezier(.4,0,.2,1)",
+  },
+  logoRow: {
+    display: "flex", alignItems: "center", gap: 9,
+    padding: "17px 16px 15px",
+    borderBottom: `1px solid ${C.border}`,
+  },
+  logoBadge: {
+    width: 28, height: 28, borderRadius: 7,
+    background: C.blue, color: C.white,
+    fontWeight: 800, fontSize: 14,
+    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  logoText: { fontWeight: 800, fontSize: 14, color: C.textPrimary, letterSpacing: "-0.3px", flex: 1 },
+  iconBtn: { background: "none", border: "none", cursor: "pointer", color: C.textMuted, padding: 4, borderRadius: 6, display: "flex", alignItems: "center" },
+  userCard: {
+    display: "flex", alignItems: "center", gap: 10,
+    padding: "13px 16px",
+    borderBottom: `1px solid ${C.border}`,
+    background: C.offWhite,
+  },
+  userAvatar: {
+    width: 32, height: 32, borderRadius: "50%",
+    background: C.blue, color: C.white,
+    fontWeight: 700, fontSize: 12,
+    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  userName: { fontSize: 12, fontWeight: 700, color: C.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  userRole: { fontSize: 11, color: C.textMuted, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  navSection: { padding: "12px 10px" },
+  navGroup: { fontSize: 9, fontWeight: 700, letterSpacing: "1.2px", color: C.textMuted, padding: "4px 8px 8px", textTransform: "uppercase" },
+  navBtn: {
+    display: "flex", alignItems: "center", gap: 10,
+    width: "100%", padding: "9px 12px",
+    borderRadius: 7, border: "none", background: "none",
+    color: C.textSecond, cursor: "pointer",
+    fontSize: 13, fontWeight: 500, textAlign: "left",
+    marginBottom: 2, position: "relative",
+    fontFamily: "'IBM Plex Sans', sans-serif",
+    transition: "background 0.12s, color 0.12s",
+  },
+  navBtnActive: { background: C.blueLight, color: C.blue, fontWeight: 700 },
+  navBtnLabel: { flex: 1 },
+  activeBar: {
+    position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
+    width: 3, height: 16, borderRadius: "3px 0 0 3px", background: C.blue,
+  },
+  sidebarBottom: { borderTop: `1px solid ${C.border}`, padding: "10px 10px 4px" },
+  verifiedStrip: {
+    display: "flex", alignItems: "center", gap: 6,
+    padding: "10px 16px 14px",
+    fontSize: 11, color: C.textMuted, fontWeight: 600,
+  },
+  main: { flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: C.offWhite },
+  topbar: {
+    display: "flex", alignItems: "center",
+    padding: "0 24px", height: 54,
+    background: C.white, borderBottom: `1px solid ${C.border}`,
+    position: "sticky", top: 0, zIndex: 10, gap: 8,
+  },
+  breadcrumb: { display: "flex", alignItems: "center", gap: 6 },
+  breadcrumbRoot: { fontSize: 13, color: C.textMuted, fontWeight: 500 },
+  breadcrumbPage: { fontSize: 13, color: C.textPrimary, fontWeight: 700 },
+  statusPill: {
+    display: "flex", alignItems: "center", gap: 6,
+    padding: "4px 10px",
+    background: C.offWhite, border: `1px solid ${C.border}`,
+    borderRadius: 20, fontSize: 12, fontWeight: 600, color: C.textSecond,
+  },
+  dot: { width: 7, height: 7, borderRadius: "50%", display: "inline-block" },
+  bellBtn: { background: "none", border: "none", cursor: "pointer", padding: 7, borderRadius: 8, display: "flex", alignItems: "center" },
+  pageWrap: { flex: 1, overflowY: "auto", padding: "30px 26px 80px" },
+  section: { maxWidth: 860 },
+  statsGrid: {
+    display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(175px, 1fr))",
+    gap: 13, marginBottom: 20,
+  },
+  bioBox: {
+    background: C.white, border: `1px solid ${C.border}`,
+    borderRadius: 10, padding: "16px 18px", marginBottom: 14,
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+  },
+  bioLabel: { fontSize: 9, fontWeight: 700, letterSpacing: "1.2px", color: C.blue, marginBottom: 8, textTransform: "uppercase" },
+  bioText:  { fontSize: 13, color: C.textSecond, lineHeight: 1.75 },
+  linkedinLink: {
+    display: "inline-flex", alignItems: "center", gap: 6,
+    padding: "7px 13px",
+    background: C.white, border: `1px solid ${C.border}`,
+    borderRadius: 7, fontSize: 13, fontWeight: 600, color: C.blue,
+    textDecoration: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+  },
+  formCard: {
+    background: C.white, border: `1px solid ${C.border}`,
+    borderRadius: 12, padding: "26px 24px", maxWidth: 600,
+    boxShadow: "0 1px 5px rgba(0,0,0,0.05)",
+  },
+  formGrid: {
+    display: "grid", gridTemplateColumns: "1fr 1fr",
+    gap: "18px 16px", marginBottom: 18,
+  },
+  input: {
+    width: "100%", background: C.offWhite,
+    border: `1px solid ${C.border}`, borderRadius: 7,
+    padding: "9px 11px", fontSize: 13, color: C.textPrimary,
+    fontFamily: "'IBM Plex Sans', sans-serif",
+    transition: "border-color 0.15s, box-shadow 0.15s",
+  },
+  formFooter: {
+    borderTop: `1px solid ${C.border}`, paddingTop: 18, marginTop: 4,
+    display: "flex", justifyContent: "flex-end",
+  },
+  saveBtn: {
+    display: "flex", alignItems: "center", gap: 7,
+    padding: "9px 20px", background: C.blue, color: C.white,
+    border: "none", borderRadius: 7, fontWeight: 700, fontSize: 13,
+    cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif",
+    transition: "background 0.15s",
+  },
+  plansGrid: {
+    display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(215px, 1fr))",
+    gap: 15, alignItems: "start",
+  },
+};

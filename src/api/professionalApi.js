@@ -1,34 +1,63 @@
 import axiosInstance from "./axiosInstance";
 
 /* ================================
-   MEMBERSHIPS (real API)
+   MEMBERSHIPS
 ================================ */
-const getMyMemberships = async () => {
+export const getMyMemberships = async () => {
   return axiosInstance.get("/workspaces/my-memberships/");
 };
 
 /* ================================
-   TEMP PROFILE STORAGE (LOCAL)
-   ⚠️ REMOVE when backend ready
+   PROFESSIONAL PROFILE
 ================================ */
-const PROFILE_KEY = "professional_profile";
 
-/* GET PROFILE */
-const getMyProfile = async () => {
-  const data = localStorage.getItem(PROFILE_KEY);
-
-  if (!data) {
-    // mimic 404 behavior
-    return { data: null };
-  }
-
-  return { data: JSON.parse(data) };
+/**
+ * GET /auth/professional/me/
+ */
+export const getMyProfile = async () => {
+  const res = await axiosInstance.get("/auth/professional/me/");
+  console.log("GET PROFILE RESPONSE:", res.data);
+  return res;
 };
 
-/* UPSERT PROFILE */
-const upsertMyProfile = async (payload) => {
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(payload));
-  return { data: payload };
+/**
+ * PUT /auth/professional/me/
+ */
+export const upsertMyProfile = async (payload) => {
+  // ✅ CLEAN + FIXED PAYLOAD
+  const cleanPayload = {
+    qualifications: payload.qualifications || "",
+    specialization: payload.specialization || "",
+    bio: payload.bio || "",
+
+    // ✅ FIXED NAME (MOST IMPORTANT)
+    linkedin_url: payload.linkedin_url || "",
+
+    // ✅ SAFE NUMBER HANDLING
+    experience_years:
+      payload.experience_years !== "" &&
+      payload.experience_years !== null &&
+      payload.experience_years !== undefined
+        ? Number(payload.experience_years)
+        : null,
+  };
+
+  // 🔍 DEBUG LOG (DON'T REMOVE UNTIL WORKS)
+  console.log("SENDING PAYLOAD:", cleanPayload);
+
+  try {
+    const res = await axiosInstance.put(
+      "/auth/professional/me/",
+      cleanPayload
+    );
+
+    console.log("SAVE RESPONSE:", res.data);
+    return res;
+
+  } catch (error) {
+    console.error("API ERROR:", error?.response?.data || error);
+    throw error;
+  }
 };
 
 export default {

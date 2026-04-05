@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import {
   UserPlus, Crown, Eye, Mail, Trash2, Search,
   X, Send, CheckCircle2, Clock, ChevronDown,
-  Zap, Users, RefreshCw,
+  Zap, Users, RefreshCw, User,
 } from "lucide-react";
 
 
@@ -73,20 +73,16 @@ function UpgradeModal({ planName, membersUsed, memberLimit, onClose, onUpgrade }
           Upgrade to invite more people.
         </p>
 
-        {/* plan comparison pills */}
         <div className="flex gap-2.5 mt-5 mb-6">
           {[
-            { name: "Starter", seats: "5 seats",  price: "₹499/mo",  current: planName === "Free" },
-            { name: "Pro",     seats: "20 seats", price: "₹1499/mo", current: planName === "Pro", highlight: true },
-            { name: "Business",seats: "Unlimited",price: "₹3999/mo", current: false },
+            { name: "Starter", seats: "5 seats",  price: "₹499/mo",  highlight: false },
+            { name: "Pro",     seats: "20 seats", price: "₹1499/mo", highlight: true  },
+            { name: "Business",seats: "Unlimited",price: "₹3999/mo", highlight: false },
           ].map((p) => (
             <div
               key={p.name}
               className={`flex-1 rounded-xl border p-3 text-left transition-all
-                ${p.highlight
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 bg-gray-50"
-                }`}
+                ${p.highlight ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-gray-50"}`}
             >
               <p className={`text-xs font-bold ${p.highlight ? "text-blue-700" : "text-gray-700"}`}>
                 {p.name}
@@ -113,7 +109,6 @@ function UpgradeModal({ planName, membersUsed, memberLimit, onClose, onUpgrade }
           <Zap size={14} />
           View all plans
         </button>
-
         <button
           onClick={onClose}
           className="mt-2.5 w-full py-2.5 border border-gray-200 text-gray-400 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
@@ -138,16 +133,12 @@ function InviteModal({ workspaceSlug, onClose, onSuccess }) {
   const handleSend = async () => {
     const trimmedEmail = email.trim();
     setError("");
-
     if (!workspaceSlug) { setError("Workspace not loaded yet."); return; }
     if (!trimmedEmail)  { setError("Please enter an email address."); return; }
 
     try {
       setLoading(true);
-      await invitationApi.sendProfessionalInvite(workspaceSlug, {
-        email: trimmedEmail,
-        role,
-      });
+      await invitationApi.sendProfessionalInvite(workspaceSlug, { email: trimmedEmail, role });
       setSent(true);
       onSuccess?.();
     } catch (err) {
@@ -167,7 +158,6 @@ function InviteModal({ workspaceSlug, onClose, onSuccess }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-2xl border border-gray-200 shadow-xl w-full max-w-md p-7">
-
         <div className="flex items-start justify-between mb-6">
           <div>
             <h2 className="text-base font-bold text-gray-900">Invite team member</h2>
@@ -188,8 +178,7 @@ function InviteModal({ workspaceSlug, onClose, onSuccess }) {
             </div>
             <p className="text-base font-bold text-gray-900">Invitation sent!</p>
             <p className="text-sm text-gray-400">
-              An invite was sent to{" "}
-              <span className="font-medium text-gray-700">{email}</span>
+              An invite was sent to <span className="font-medium text-gray-700">{email}</span>
             </p>
             <button
               onClick={onClose}
@@ -206,7 +195,6 @@ function InviteModal({ workspaceSlug, onClose, onSuccess }) {
                 <span>{error}</span>
               </div>
             )}
-
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 Email address
@@ -219,7 +207,6 @@ function InviteModal({ workspaceSlug, onClose, onSuccess }) {
                 className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-300 outline-none focus:border-blue-500 transition-colors"
               />
             </div>
-
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 Role
@@ -233,7 +220,6 @@ function InviteModal({ workspaceSlug, onClose, onSuccess }) {
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
-
             <div className="flex gap-2.5 pt-2">
               <button
                 onClick={onClose}
@@ -279,10 +265,7 @@ function RoleDropdown({ currentRole, userId, slug, onChanged }) {
     if (newRole === currentRole) { setOpen(false); return; }
     try {
       setLoading(true);
-      await axiosInstance.post(`/workspaces/${slug}/change-role/`, {
-        user_id: userId,
-        role: newRole,
-      });
+      await axiosInstance.post(`/workspaces/${slug}/change-role/`, { user_id: userId, role: newRole });
       onChanged?.();
     } catch (err) {
       console.error("Role change failed:", err);
@@ -312,10 +295,7 @@ function RoleDropdown({ currentRole, userId, slug, onChanged }) {
               key={r}
               onClick={() => changeRole(r)}
               className={`w-full text-left px-3.5 py-2 text-xs font-medium transition-colors
-                ${r === currentRole
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-gray-700 hover:bg-gray-50"
-                }`}
+                ${r === currentRole ? "text-blue-600 bg-blue-50" : "text-gray-700 hover:bg-gray-50"}`}
             >
               {r.charAt(0) + r.slice(1).toLowerCase()}
               {r === currentRole && (
@@ -335,23 +315,27 @@ function RoleDropdown({ currentRole, userId, slug, onChanged }) {
 const TeamMembers = ({ slug }) => {
   const navigate = useNavigate();
 
-  const [members,        setMembers]        = useState([]);
-  const [pendingInvites, setPendingInvites] = useState([]);
-  const [workspaceType,  setWorkspaceType]  = useState(null);
-  const [planName,       setPlanName]       = useState("Free");
-  const [memberLimit,    setMemberLimit]    = useState(3);
-  const [loading,        setLoading]        = useState(true);
-  const [activeTab,      setActiveTab]      = useState("members"); // "members" | "pending"
-  const [showInvite,     setShowInvite]     = useState(false);
-  const [showUpgrade,    setShowUpgrade]    = useState(false);
-  const [searchTerm,     setSearchTerm]     = useState("");
+  const [members,          setMembers]          = useState([]);
+  const [pendingInvites,   setPendingInvites]   = useState([]);
+  const [workspaceType,    setWorkspaceType]    = useState(null);
+  const [workspaceLoading, setWorkspaceLoading] = useState(true); // ← separate flag for race-condition fix
+  const [planName,         setPlanName]         = useState("Free");
+  const [memberLimit,      setMemberLimit]      = useState(3);
+  const [loading,          setLoading]          = useState(true);
+  const [activeTab,        setActiveTab]        = useState("members");
+  const [showInvite,       setShowInvite]       = useState(false);
+  const [showUpgrade,      setShowUpgrade]      = useState(false);
+  const [searchTerm,       setSearchTerm]       = useState("");
 
-  const isSolo       = workspaceType === "SOLO";
+  // ── isSolo is ONLY derived once workspace type has fully resolved ──
+  // Before that, workspaceLoading=true keeps all invite UI hidden.
+  const workspaceResolved = !workspaceLoading;
+  const isSolo            = workspaceResolved && workspaceType === "SOLO";
+
   const membersUsed  = members.length;
   const limitReached = memberLimit !== null && membersUsed >= memberLimit;
   const membersLeft  = memberLimit !== null ? Math.max(memberLimit - membersUsed, 0) : null;
   const usagePct     = memberLimit > 0 ? Math.min((membersUsed / memberLimit) * 100, 100) : 0;
-  // warn when 80%+ used
   const nearLimit    = !limitReached && memberLimit > 0 && usagePct >= 80;
 
   // ── fetchers ──
@@ -380,10 +364,28 @@ const TeamMembers = ({ slug }) => {
 
   const fetchWorkspace = async () => {
     try {
+      setWorkspaceLoading(true);
+
+      // ── fast path: read from localStorage meta written by CreateWorkspace ──
+      // This avoids a round-trip AND eliminates the loading window entirely
+      // on the first visit right after workspace creation.
+      try {
+        const meta = JSON.parse(localStorage.getItem("workspace_meta") || "{}");
+        if (meta[slug]?.workspace_type) {
+          setWorkspaceType(meta[slug].workspace_type);
+          setWorkspaceLoading(false);
+          return;
+        }
+      } catch { /* non-fatal */ }
+
+      // ── fallback: fetch from API ──
       const res = await axiosInstance.get(`/workspaces/${slug}/`);
       setWorkspaceType(res.data.workspace_type);
     } catch (err) {
       console.error("Workspace fetch error:", err);
+      setWorkspaceType(null); // unknown on error — do NOT default to SOLO
+    } finally {
+      setWorkspaceLoading(false);
     }
   };
 
@@ -393,6 +395,13 @@ const TeamMembers = ({ slug }) => {
     fetchWorkspace();
     fetchPendingInvites();
   }, [slug]);
+
+  // ── if workspace resolves to SOLO while on "pending" tab, snap back to "members" ──
+  useEffect(() => {
+    if (workspaceResolved && isSolo && activeTab === "pending") {
+      setActiveTab("members");
+    }
+  }, [workspaceResolved, isSolo, activeTab]);
 
   // ── actions ──
   const removeMember = async (userId) => {
@@ -423,7 +432,9 @@ const TeamMembers = ({ slug }) => {
     }
   };
 
+  // ── triple guard: workspace must be resolved, not solo, and not loading ──
   const handleInviteClick = () => {
+    if (!workspaceResolved || isSolo) return;
     if (limitReached) {
       setShowUpgrade(true);
     } else {
@@ -439,12 +450,43 @@ const TeamMembers = ({ slug }) => {
     return <div className="p-10 text-center text-red-500 text-sm">Workspace context missing.</div>;
   }
 
+  // ── tabs: "Pending invites" only appears for resolved TEAM workspaces ──
+  const tabs = [
+    { key: "members", label: "Members", count: members.length },
+    ...(workspaceResolved && !isSolo
+      ? [{ key: "pending", label: "Pending invites", count: pendingInvites.length }]
+      : []
+    ),
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-5">
 
-        {/* ── near-limit banner ── */}
-        {nearLimit && (
+        {/* ── solo workspace notice ── */}
+        {workspaceResolved && isSolo && (
+          <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+            <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <User size={14} className="text-gray-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gray-700">Solo workspace</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                This is a solo workspace — only you can be a member. Upgrade to a Team plan to invite others.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate("/billing")}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors"
+            >
+              <Zap size={12} />
+              Upgrade
+            </button>
+          </div>
+        )}
+
+        {/* ── near-limit banner (TEAM only) ── */}
+        {workspaceResolved && !isSolo && nearLimit && (
           <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2.5">
               <Crown size={15} className="text-amber-500 flex-shrink-0" />
@@ -467,15 +509,22 @@ const TeamMembers = ({ slug }) => {
         {/* ── header ── */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Team Members</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Manage your workspace team</p>
+            <h1 className="text-xl font-bold text-gray-900">
+              {isSolo ? "Workspace Members" : "Team Members"}
+            </h1>
+            <p className="text-sm text-gray-400 mt-0.5">
+              {isSolo ? "Solo workspace — just you" : "Manage your workspace team"}
+            </p>
 
             <div className="flex flex-wrap gap-2.5 mt-4">
               {[
-                { label: "Members",    value: membersUsed },
-                { label: "Seats left", value: membersLeft ?? "∞" },
-                { label: "Plan",       value: planName },
-                { label: "Pending",    value: pendingInvites.length },
+                { label: "Members", value: membersUsed },
+                { label: "Plan",    value: planName },
+                // seats + pending only meaningful for team
+                ...(!isSolo ? [
+                  { label: "Seats left", value: membersLeft ?? "∞" },
+                  { label: "Pending",    value: pendingInvites.length },
+                ] : []),
               ].map(({ label, value }) => (
                 <div
                   key={label}
@@ -488,7 +537,8 @@ const TeamMembers = ({ slug }) => {
             </div>
           </div>
 
-          {!isSolo && (
+          {/* invite button: hidden while loading AND hidden for solo */}
+          {workspaceResolved && !isSolo && (
             <button
               onClick={handleInviteClick}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors flex-shrink-0 w-fit
@@ -500,8 +550,8 @@ const TeamMembers = ({ slug }) => {
           )}
         </div>
 
-        {/* ── plan card ── */}
-        {!isSolo && (
+        {/* ── plan card (TEAM only) ── */}
+        {workspaceResolved && !isSolo && (
           <div className={`rounded-xl border p-5 ${limitReached ? "bg-red-50 border-red-200" : "bg-white border-gray-200"}`}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex-1">
@@ -517,7 +567,6 @@ const TeamMembers = ({ slug }) => {
                 <p className="text-xs text-gray-500 mt-1">
                   {membersUsed} / {memberLimit} members used · {membersLeft} seats remaining
                 </p>
-
                 <div className="mt-3 h-1.5 w-full max-w-xs bg-gray-100 rounded-full overflow-hidden">
                   <div
                     style={{ width: `${usagePct}%` }}
@@ -526,7 +575,6 @@ const TeamMembers = ({ slug }) => {
                   />
                 </div>
               </div>
-
               <button
                 onClick={() => navigate("/billing")}
                 className={`flex items-center gap-2 px-4 py-2 text-white text-xs font-semibold rounded-xl transition-colors flex-shrink-0 w-fit
@@ -541,12 +589,8 @@ const TeamMembers = ({ slug }) => {
 
         {/* ── tabs + search ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* tabs */}
           <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
-            {[
-              { key: "members", label: "Members",         count: members.length },
-              { key: "pending", label: "Pending invites", count: pendingInvites.length },
-            ].map((t) => (
+            {tabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
@@ -565,7 +609,6 @@ const TeamMembers = ({ slug }) => {
             ))}
           </div>
 
-          {/* search */}
           <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 w-full sm:w-56 shadow-sm">
             <Search size={13} className="text-gray-300 flex-shrink-0" />
             <input
@@ -603,7 +646,6 @@ const TeamMembers = ({ slug }) => {
                     key={m.id}
                     className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_130px_110px_110px_90px] items-center px-5 py-3.5 hover:bg-gray-50 transition-colors"
                   >
-                    {/* member info */}
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`relative w-8 h-8 rounded-full ${avatarColor(m.email)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
                         {m.email?.[0]?.toUpperCase()}
@@ -617,10 +659,10 @@ const TeamMembers = ({ slug }) => {
                       </div>
                     </div>
 
-                    {/* role + change dropdown */}
                     <div className="hidden sm:flex items-center gap-1.5">
                       <RoleBadge role={m.role} />
-                      {m.role !== "OWNER" && (
+                      {/* role dropdown: TEAM only, non-owners only */}
+                      {!isSolo && m.role !== "OWNER" && (
                         <RoleDropdown
                           currentRole={m.role}
                           userId={m.user_id}
@@ -630,17 +672,14 @@ const TeamMembers = ({ slug }) => {
                       )}
                     </div>
 
-                    {/* joined */}
                     <div className="hidden sm:block text-xs text-gray-400">
                       {m.joined_at ? new Date(m.joined_at).toLocaleDateString() : "—"}
                     </div>
 
-                    {/* last seen */}
                     <div className="hidden sm:block text-xs text-gray-400">
                       {timeAgo(m.last_seen)}
                     </div>
 
-                    {/* actions */}
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => navigate(`/admin/professionals/${m.user_id}`)}
@@ -649,7 +688,8 @@ const TeamMembers = ({ slug }) => {
                       >
                         <Eye size={15} />
                       </button>
-                      {m.role !== "OWNER" && (
+                      {/* remove: TEAM only, non-owners only */}
+                      {!isSolo && m.role !== "OWNER" && (
                         <button
                           onClick={() => removeMember(m.user_id)}
                           className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors"
@@ -666,8 +706,8 @@ const TeamMembers = ({ slug }) => {
           </div>
         )}
 
-        {/* ── pending invites tab ── */}
-        {activeTab === "pending" && (
+        {/* ── pending invites (only reachable for TEAM — tab not rendered for SOLO) ── */}
+        {activeTab === "pending" && workspaceResolved && !isSolo && (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
             <div className="hidden sm:grid grid-cols-[1fr_120px_130px_100px] bg-gray-50 border-b border-gray-100 px-5 py-3">
               {["Email", "Role", "Sent", ""].map((h) => (
@@ -691,15 +731,12 @@ const TeamMembers = ({ slug }) => {
             ) : (
               <div className="divide-y divide-gray-50">
                 {pendingInvites
-                  .filter((inv) =>
-                    (inv.email || "").toLowerCase().includes(searchTerm.toLowerCase())
-                  )
+                  .filter((inv) => (inv.email || "").toLowerCase().includes(searchTerm.toLowerCase()))
                   .map((inv) => (
                     <div
                       key={inv.id}
                       className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_120px_130px_100px] items-center px-5 py-3.5 hover:bg-gray-50 transition-colors"
                     >
-                      {/* email */}
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-8 h-8 rounded-full bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center flex-shrink-0">
                           <Clock size={13} className="text-gray-400" />
@@ -712,17 +749,14 @@ const TeamMembers = ({ slug }) => {
                         </div>
                       </div>
 
-                      {/* role */}
                       <div className="hidden sm:block">
                         <RoleBadge role={inv.role} />
                       </div>
 
-                      {/* sent */}
                       <div className="hidden sm:block text-xs text-gray-400">
                         {timeAgo(inv.created_at)}
                       </div>
 
-                      {/* actions */}
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => resendInvite(inv.id)}
@@ -748,8 +782,8 @@ const TeamMembers = ({ slug }) => {
 
       </div>
 
-      {/* ── modals ── */}
-      {showInvite && !limitReached && (
+      {/* ── modals — triple guard on all three conditions ── */}
+      {showInvite && workspaceResolved && !isSolo && !limitReached && (
         <InviteModal
           workspaceSlug={slug}
           onClose={() => setShowInvite(false)}
@@ -761,7 +795,7 @@ const TeamMembers = ({ slug }) => {
         />
       )}
 
-      {showUpgrade && (
+      {showUpgrade && workspaceResolved && !isSolo && (
         <UpgradeModal
           planName={planName}
           membersUsed={membersUsed}

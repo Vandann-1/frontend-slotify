@@ -30,6 +30,16 @@ export const getWorkspaceBySlug = async (slug) => {
   }
 };
 
+/* 🔥 MOST IMPORTANT FOR STEP 4 */
+export const getDashboard = async (slug) => {
+  try {
+    const response = await axiosInstance.get(`/workspaces/${slug}/dashboard/`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
 /* UPDATE WORKSPACE */
 export const updateWorkspace = async (slug, workspaceData) => {
   try {

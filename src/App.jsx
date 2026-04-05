@@ -27,9 +27,9 @@ import PlansPage from "./features/Plans/PlansPage";
 /* ==============================
    WORKSPACE
 ============================== */
-import CreateDashboard from "./features/dashboards/CreateDashboard";
-import WorkspaceList from "./features/dashboards/Listworkspaces";
-import AdminWorkspace from "./features/dashboards/Adminworkspaces";
+import CreateDashboard from "./features/dashboard/CreateDashboard";
+import WorkspaceList from "./features/dashboard/Listworkspaces";
+import AdminWorkspace from "./features/dashboard/Adminworkspaces";
 import InviteValidatePage from "./features/invite/InviteValidatePage";
 
 /* ==============================
