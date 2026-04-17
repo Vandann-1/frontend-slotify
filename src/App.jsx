@@ -1,61 +1,45 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-/* ==============================
-   LAYOUTS
-============================== */
+/* ================= LAYOUT ================= */
 import MainLayout from "./layouts/MainLayout";
 
-/* ==============================
-   AUTH PAGES
-============================== */
+/* ================= AUTH ================= */
 import Home from "./features/auth/pages/Home";
 import Login from "./features/auth/pages/Login";
 import Register from "./features/auth/pages/Register";
+import InviteValidatePage from "./features/invite/InviteValidatePage";
 
-/* ==============================
-   PROFESSIONAL
-============================== */
+/* ================= ADMIN CORE ================= */
+import CreateService from "./features/dashboard/CreateService";
+import CreateAvailability from "./features/dashboard/CreateAvailability";
+import BookingsList from "./features/Bookings/BookingsList";
+
+/* ================= PROFESSIONAL ================= */
 import ProfessionalDashboard from "./features/professional/ProfessionalDashboard";
 import ProfessionalProfile from "./features/professional/ProfessionalProfile";
 import AdminProfessionalDetail from "./features/professional/AdminProfessionalDeatail";
 
-/* ==============================
-   PLANS
-============================== */
-import PlansPage from "./features/Plans/PlansPage";
-
-/* ==============================
-   WORKSPACE
-============================== */
+/* ================= WORKSPACE ================= */
 import CreateDashboard from "./features/dashboard/CreateDashboard";
 import WorkspaceList from "./features/dashboard/Listworkspaces";
 import AdminWorkspace from "./features/dashboard/Adminworkspaces";
-import InviteValidatePage from "./features/invite/InviteValidatePage";
 
-/* ==============================
-   PROTECTED ROUTE
-============================== */
+/* ================= PLANS ================= */
+import PlansPage from "./features/Plans/PlansPage";
 
+/* ================= PROTECTED ================= */
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("access");
   return token ? children : <Navigate to="/login" replace />;
 }
 
-/* ==============================
-   APP ROUTER
-============================== */
-
+/* ================= APP ================= */
 function App() {
   return (
     <BrowserRouter>
-
       <Routes>
 
-        {/* TEST */}
-        <Route path="/test" element={<div>TEST PAGE</div>} />
-
-        {/* ================= PUBLIC ROUTES ================= */}
-
+        {/* ================= PUBLIC ================= */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -63,57 +47,70 @@ function App() {
           <Route path="/invite-accept/:token" element={<InviteValidatePage />} />
         </Route>
 
-
-        {/* ================= ADMIN AREA ================= */}
-
+        {/* ================= ADMIN STATIC ================= */}
         <Route
+          path="/admin"
           element={
             <ProtectedRoute>
               <MainLayout />
             </ProtectedRoute>
           }
         >
-          {/* Admin Professional Detail */}
-          <Route
-            path="/admin/professionals/:id"
-            element={<AdminProfessionalDetail />}
-          />
+          <Route path="create-service" element={<CreateService />} />
+          <Route path="create-availability" element={<CreateAvailability />} />
+          <Route path="bookings" element={<BookingsList />} />
+
+          {/* default */}
+          <Route index element={<Navigate to="create-service" replace />} />
         </Route>
 
-
-        {/* ================= ADMIN WORKSPACE TABS ================= */}
-        {/* Each tab has its own URL — AdminWorkspace reads `page` from the URL internally */}
-
+        {/* ================= WORKSPACE (ONLY ONE ROUTE) ================= */}
         <Route
-          path="/admin/workspace/:slug/dashboard"
-          element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>}
-        />
-        <Route
-          path="/admin/workspace/:slug/team"
-          element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>}
-        />
-        <Route
-          path="/admin/workspace/:slug/bookings"
-          element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>}
-        />
-        <Route
-          path="/admin/workspace/:slug/plans"
-          element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>}
-        />
-        <Route
-          path="/admin/workspace/:slug/settings"
-          element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>}
+          path="/admin/workspace/:slug/:page"
+          element={
+            <ProtectedRoute>
+              <AdminWorkspace />
+            </ProtectedRoute>
+          }
         />
 
-        {/* Redirect bare /admin/workspace/:slug → dashboard */}
+        {/* default workspace */}
         <Route
           path="/admin/workspace/:slug"
-          element={<Navigate to="dashboard" replace />}
+          element={<Navigate to="/admin/workspace/default/dashboard" replace />}
         />
 
+        {/* ================= PROFESSIONAL ================= */}
+        <Route
+          path="/professional/workspace/:slug"
+          element={
+            <ProtectedRoute>
+              <ProfessionalDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* ================= WORKSPACE MANAGEMENT ================= */}
+        <Route
+          path="/professional/profile"
+          element={
+            <ProtectedRoute>
+              <ProfessionalProfile />
+            </ProtectedRoute>
+          }
+        />
 
+        {/* ================= ADMIN PROFESSIONAL ================= */}
+        <Route
+          path="/admin/professionals/:id"
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+              <AdminProfessionalDetail />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= MANAGEMENT ================= */}
         <Route
           path="/workspaces"
           element={<ProtectedRoute><WorkspaceList /></ProtectedRoute>}
@@ -124,26 +121,16 @@ function App() {
           element={<ProtectedRoute><CreateDashboard /></ProtectedRoute>}
         />
 
-
-        {/* ================= PROFESSIONAL AREA ================= */}
-
+        {/* ================= PLANS ================= */}
         <Route
-          path="/professional/workspace/:slug"
-          element={<ProtectedRoute><ProfessionalDashboard /></ProtectedRoute>}
+          path="/plans"
+          element={<ProtectedRoute><PlansPage /></ProtectedRoute>}
         />
-
-        <Route
-          path="/professional/profile"
-          element={<ProtectedRoute><ProfessionalProfile /></ProtectedRoute>}
-        />
-
 
         {/* ================= FALLBACK ================= */}
-
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
-
     </BrowserRouter>
   );
 }

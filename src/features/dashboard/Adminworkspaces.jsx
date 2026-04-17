@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getDashboard } from "../../api/workspaceApi.js";
 import { COMPONENT_MAP } from "../../layouts/componentMap.jsx";
 import { SIDEBAR_CONFIG } from "../../layouts/sidebarConfig.js";
+
 import {
   Menu, X, LogOut, Bell, HelpCircle,
   Search, ChevronDown, Settings, Grid, Zap
@@ -586,8 +587,10 @@ export default function AdminWorkspace() {
   const [adminUser, setAdminUser] = useState(null);
   const [dashboard, setDashboard] = useState(null);
 
-  const page = location.pathname.split("/").pop();
+const pathParts = location.pathname.split("/").filter(Boolean);
+const page = pathParts[pathParts.length - 1];
 
+console.log("PAGE VALUE:", page); // ✅ NOW OK
   // ✅ USER LOAD  (unchanged)
   useEffect(() => {
     try {

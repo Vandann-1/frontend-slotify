@@ -171,49 +171,59 @@ export default function CreateWorkspace() {
   const canNext0 = !!selectedType;
   const canNext1 = form.name.trim() !== "";
 
-  const handleSubmit = async () => {
-    setError("");
-    try {
-      setLoading(true);
-      const payload = {
-        name:           form.name,
-        template_type:  selectedType,
-        workspace_type: workspaceMode,
-        email:          form.email,
-        phone:          form.phone,
-        description:    form.description,
-        team_size:      workspaceMode === "SOLO" ? "JUST_ME" : (TEAM_SIZE_MAP[teamSize] || "JUST_ME"),
-      };
+const handleSubmit = async () => {
+  setError("");
 
-      const res = await axiosInstance.post("/workspaces/", payload);
-      const createdSlug    = res.data?.slug        || "";
-      const returnedTenant = res.data?.tenant_type || selectedType;
+  try {
+    setLoading(true);
 
-      if (createdSlug) {
-        try {
-          const meta = JSON.parse(localStorage.getItem("workspace_meta") || "{}");
-          meta[createdSlug] = { tenant_type: returnedTenant, workspace_type: workspaceMode };
-          localStorage.setItem("workspace_meta", JSON.stringify(meta));
-        } catch (_) {}
-      }
+    // ✅ CLEAN PAYLOAD (ONLY WHAT BACKEND ACCEPTS)
+    const payload = {
+      name: form.name,
+      template_type: selectedType,
+      workspace_type: workspaceMode.toLowerCase(),
+    };
 
-      setSuccess(true);
-      if (createdSlug) {
-        setTimeout(() => {
-          navigate(`/admin/workspace/${createdSlug}/dashboard`);
-        }, 1500);
-      }
+    console.log("SENDING:", payload);
 
-    } catch (err) {
-      setError(
-        err?.response?.data?.detail ||
-        JSON.stringify(err?.response?.data) ||
-        "Failed to create workspace."
-      );
-    } finally {
-      setLoading(false);
+    const res = await axiosInstance.post("/workspaces/", payload);
+
+    console.log("RESPONSE:", res.data);
+
+    const createdSlug = res.data?.slug || "";
+
+    // optional local storage
+    if (createdSlug) {
+      try {
+        const meta = JSON.parse(localStorage.getItem("workspace_meta") || "{}");
+        meta[createdSlug] = {
+          tenant_type: selectedType,
+          workspace_type: workspaceMode
+        };
+        localStorage.setItem("workspace_meta", JSON.stringify(meta));
+      } catch (_) {}
     }
-  };
+
+    setSuccess(true);
+
+    if (createdSlug) {
+      setTimeout(() => {
+        navigate(`/admin/workspace/${createdSlug}/dashboard`);
+      }, 1500);
+    }
+
+  } catch (err) {
+    console.log("ERROR:", err.response?.data);
+
+    setError(
+      err.response?.data?.detail ||
+      JSON.stringify(err.response?.data) ||
+      "Failed to create workspace."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const user = (() => {
     try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; }

@@ -1,12 +1,14 @@
 import axiosInstance from "./axiosInstance";
 
+
 /* CREATE WORKSPACE */
 export const createWorkspace = async (workspaceData) => {
   try {
     const response = await axiosInstance.post("/workspaces/", workspaceData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || error.message;
+    console.log("CREATE WORKSPACE ERROR:", error.response?.data);
+    throw error; // ✅ DON'T destroy error
   }
 };
 
