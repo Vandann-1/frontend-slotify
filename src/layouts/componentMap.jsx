@@ -1,11 +1,18 @@
+// 🔥 REAL PAGES (IMPORTANT)
+import CreateService from "../features/dashboard/CreateService";
+import CreateAvailability from "../features/dashboard/CreateAvailability";
+import BookingsList from "../features/Bookings/BookingsList";
 import TeamMembers from "../features/Team/TeamMembers";
 import PlansPage from "../features/Plans/PlansPage";
+
 
 /* ================= CORE ================= */
 
 const Overview = () => <div>Overview Dashboard</div>;
-const Bookings = () => <div>Bookings Page</div>;
 const Settings = () => <div>Settings Page</div>;
+const Bookings = () => <div>Bookings Page</div>;
+
+/* ================= DUMMY PAGES (FOR TEMPLATES) ================= */   
 
 /* ================= MENTOR ================= */
 
@@ -39,32 +46,32 @@ const CheckupAI = () => <div>AI Checkup System</div>;
 /* ================= EXPORT MAP ================= */
 
 export const COMPONENT_MAP = {
-  // 🔥 COMMON
+  // 🔥 CORE (REAL SYSTEM)
   overview: Overview,
-  bookings: Bookings,
+
+  services: CreateService,          // ✅ required
+  availability: CreateAvailability, // ✅ required
+  bookings: BookingsList,       // ✅ use real page (not dummy)
+
   plans: PlansPage,
   team: TeamMembers,
   settings: Settings,
 
-  // 🔥 MENTOR
+  // 🔥 OPTIONAL TEMPLATES (placeholders until you build APIs)
   students: Students,
   sessions: Sessions,
   notes: Notes,
 
-  // 🔥 FITNESS
   clients: Clients,
   workouts: Workouts,
   progress: Progress,
 
-  // 🔥 TEACHER
   assignments: Assignments,
   attendance: Attendance,
 
-  // 🔥 CONSULTANT
   meetings: Meetings,
   reports: Reports,
 
-  // 🔥 DOCTOR
   patients: Patients,
   appointments: Appointments,
   medical_records: MedicalRecords,

@@ -13,47 +13,41 @@ import {
 
 export const SIDEBAR_CONFIG = {
 
-  // 🔥 CORE SYSTEM (ALWAYS PRESENT)
+  // 🔥 CORE SYSTEM
   overview: {
     label: "Overview",
     icon: LayoutDashboard,
     group: "core",
-    path: "/dashboard",
   },
 
   services: {
     label: "Services",
     icon: ClipboardList,
     group: "core",
-    path: "/admin/create-service",
   },
 
   availability: {
     label: "Availability",
     icon: Calendar,
     group: "core",
-    path: "/admin/create-availability",
   },
 
   bookings: {
     label: "Bookings",
     icon: Calendar,
     group: "core",
-    path: "/admin/bookings",
   },
 
   team: {
     label: "Team",
     icon: Users,
     group: "core",
-    path: "/team",
   },
 
   settings: {
     label: "Settings",
     icon: Settings,
     group: "core",
-    path: "/settings",
   },
 
   // 🔥 MENTOR TEMPLATE

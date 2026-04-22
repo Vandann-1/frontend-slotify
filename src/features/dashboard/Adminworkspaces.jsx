@@ -590,7 +590,7 @@ export default function AdminWorkspace() {
 const pathParts = location.pathname.split("/").filter(Boolean);
 const page = pathParts[pathParts.length - 1];
 
-console.log("PAGE VALUE:", page); // ✅ NOW OK
+// console.log("PAGE VALUE:", page); // ✅ NOW OK
   // ✅ USER LOAD  (unchanged)
   useEffect(() => {
     try {
