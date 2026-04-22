@@ -6,7 +6,6 @@ import {
   LogOut,
   Zap,
   ChevronDown,
-  BookOpen,
   Users,
   BarChart2,
   Settings,
@@ -19,29 +18,28 @@ const NAV_LINKS = [
   {
     label: "Product",
     dropdown: [
-      { icon: <LayoutDashboard size={15} />, label: "Dashboard",    desc: "Manage all your bookings"   },
-      { icon: <Users size={15} />,           label: "Team",          desc: "Invite & manage members"    },
-      { icon: <BarChart2 size={15} />,        label: "Analytics",     desc: "Track performance metrics"  },
-      { icon: <Settings size={15} />,         label: "Integrations",  desc: "Connect your stack"         },
+      { icon: <LayoutDashboard size={15} />, label: "Dashboard", desc: "Manage all your bookings" },
+      { icon: <Users size={15} />, label: "Team", desc: "Invite & manage members" },
+      { icon: <BarChart2 size={15} />, label: "Analytics", desc: "Track performance metrics" },
+      { icon: <Settings size={15} />, label: "Integrations", desc: "Connect your stack" },
     ],
   },
-  { label: "Pricing",  href: "/pricing"  },
-  { label: "Docs",     href: "/docs"     },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Docs", href: "/docs" },
 ];
 
 export default function Header() {
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const token = localStorage.getItem("access");
-  const slug  = localStorage.getItem("workspace_slug");
+  const slug = localStorage.getItem("workspace_slug");
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [openDropdown,    setOpenDropdown]    = useState(null);
-  const [scrolled,        setScrolled]        = useState(false);
-  const [mobileOpen,      setMobileOpen]      = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  /* scroll detection for floating effect */
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll);
@@ -59,36 +57,32 @@ export default function Header() {
 
   return (
     <>
-      {/* ─────────────────────────────────────────
-          HEADER
-      ───────────────────────────────────────── */}
       <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0,   opacity: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        initial={{ y: -10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
         className={`
           fixed top-0 left-0 right-0 z-40
-          transition-all duration-300
+          transition-all duration-500
           ${scrolled
-            ? "bg-white/90 backdrop-blur-md shadow-[0_1px_24px_rgba(37,99,235,0.08)] border-b border-blue-100"
-            : "bg-white border-b border-blue-50"
+            ? "bg-[#FBF9F7]/80 backdrop-blur-xl border-b border-stone-200/50 py-2"
+            : "bg-white border-b border-transparent py-4"
           }
         `}
       >
-        <div className="max-w-7xl mx-auto px-5 h-16 flex items-center justify-between gap-8">
-
-          {/* ── LOGO ── */}
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-md shadow-blue-200 group-hover:shadow-blue-300 transition-shadow">
-              <Zap size={16} className="text-white fill-white" />
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+          
+          {/* ── LOGO (Serif Style) ── */}
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 rounded-xl bg-[#0F172A] flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+              <Zap size={18} className="text-white fill-white" />
             </div>
-            <span className="text-[17px] font-black tracking-tight text-slate-900">
-              Slot<span className="text-blue-600">ify</span>
+            <span className="text-xl font-semibold tracking-tight text-slate-900" style={{ fontFamily: "Charter, serif" }}>
+              Slotify
             </span>
           </Link>
 
-          {/* ── CENTER NAV (desktop) ── */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* ── CENTER NAV ── */}
+          <nav className="hidden md:flex items-center gap-2">
             {NAV_LINKS.map((item) =>
               item.dropdown ? (
                 <div
@@ -97,39 +91,36 @@ export default function Header() {
                   onMouseEnter={() => setOpenDropdown(item.label)}
                   onMouseLeave={() => setOpenDropdown(null)}
                 >
-                  <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[14px] font-medium text-slate-600 hover:text-slate-900 hover:bg-stone-100/50 transition-all">
                     {item.label}
-                    <motion.span
-                      animate={{ rotate: openDropdown === item.label ? 180 : 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronDown size={13} />
-                    </motion.span>
+                    <ChevronDown size={14} className={`transition-transform duration-300 ${openDropdown === item.label ? 'rotate-180' : ''}`} />
                   </button>
 
                   <AnimatePresence>
                     {openDropdown === item.label && (
                       <motion.div
-                        initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                        transition={{ duration: 0.18 }}
-                        className="absolute top-full left-0 mt-2 w-60 bg-white rounded-2xl shadow-xl shadow-blue-100/60 border border-blue-100 p-2 z-50"
+                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                        transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                        className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-stone-200/60 p-2 overflow-hidden"
                       >
-                        {item.dropdown.map((d) => (
-                          <button
-                            key={d.label}
-                            className="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition-colors group text-left"
-                          >
-                            <div className="mt-0.5 w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                              {d.icon}
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-slate-800">{d.label}</div>
-                              <div className="text-xs text-slate-400">{d.desc}</div>
-                            </div>
-                          </button>
-                        ))}
+                        <div className="grid gap-1">
+                          {item.dropdown.map((d) => (
+                            <button
+                              key={d.label}
+                              className="w-full flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-[#FBF9F7] transition-colors group text-left"
+                            >
+                              <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center text-slate-600 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                {d.icon}
+                              </div>
+                              <div>
+                                <div className="text-[14px] font-semibold text-slate-900">{d.label}</div>
+                                <div className="text-[12px] text-slate-500 leading-tight">{d.desc}</div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -138,7 +129,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   to={item.href}
-                  className="px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                  className="px-4 py-2 rounded-full text-[14px] font-medium text-slate-600 hover:text-slate-900 hover:bg-stone-100/50 transition-all"
                 >
                   {item.label}
                 </Link>
@@ -147,24 +138,18 @@ export default function Header() {
           </nav>
 
           {/* ── RIGHT ACTIONS ── */}
-          <div className="flex items-center gap-2.5">
-
+          <div className="flex items-center gap-3">
             {!token ? (
               <>
-                <Link
-                  to="/login"
-                  className="hidden md:inline-flex items-center px-3.5 py-2 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                >
+                <Link to="/login" className="hidden md:inline-flex text-[14px] font-medium text-slate-600 hover:text-slate-900 px-4 py-2 transition-colors">
                   Sign in
                 </Link>
-
                 <Link to="/register">
                   <motion.button
-                    whileHover={{ scale: 1.04, boxShadow: "0 4px 18px rgba(37,99,235,0.3)" }}
-                    whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl shadow-md shadow-blue-200 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="bg-[#0F172A] text-white text-[14px] font-semibold px-5 py-2.5 rounded-full shadow-lg shadow-slate-200 transition-all"
                   >
-                    <Zap size={13} className="fill-white" />
                     Get Started
                   </motion.button>
                 </Link>
@@ -172,179 +157,65 @@ export default function Header() {
             ) : (
               <>
                 {slug && (
-                  <Link
-                    to={`/workspace/${slug}`}
-                    className="hidden md:flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <LayoutDashboard size={15} />
-                    Dashboard
+                  <Link to={`/workspace/${slug}`} className="hidden md:flex items-center gap-2 px-4 py-2 text-[14px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
+                    <LayoutDashboard size={16} />
+                    <span>Dashboard</span>
                   </Link>
                 )}
-
-                <motion.button
+                <button
                   onClick={() => setShowLogoutModal(true)}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold px-4 py-2 rounded-xl border border-red-200 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-stone-200 text-[14px] font-semibold text-slate-600 hover:bg-stone-50 transition-all"
                 >
-                  <LogOut size={14} />
-                  Logout
-                </motion.button>
+                  <LogOut size={16} />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
               </>
             )}
 
-            {/* mobile menu toggle */}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-blue-50 text-slate-500 transition-colors"
-            >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-slate-900">
+              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
-
         </div>
-
-        {/* ── MOBILE MENU ── */}
-        <AnimatePresence>
-          {mobileOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22 }}
-              className="md:hidden overflow-hidden border-t border-blue-100 bg-white"
-            >
-              <div className="px-5 py-4 flex flex-col gap-1">
-                {NAV_LINKS.map((item) =>
-                  item.dropdown ? (
-                    <div key={item.label}>
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest px-2 pt-3 pb-1">
-                        {item.label}
-                      </p>
-                      {item.dropdown.map((d) => (
-                        <button
-                          key={d.label}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition-colors text-left"
-                        >
-                          <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                            {d.icon}
-                          </div>
-                          <span className="text-sm font-semibold text-slate-700">{d.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className="px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  )
-                )}
-
-                <div className="border-t border-blue-100 mt-3 pt-3 flex flex-col gap-2">
-                  {!token ? (
-                    <>
-                      <Link to="/login" onClick={() => setMobileOpen(false)}
-                        className="px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-blue-50 transition-colors">
-                        Sign in
-                      </Link>
-                      <Link to="/register" onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-center gap-1.5 bg-blue-600 text-white text-sm font-bold px-4 py-3 rounded-xl">
-                        <Zap size={13} className="fill-white" /> Get Started
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      {slug && (
-                        <Link to={`/workspace/${slug}`} onClick={() => setMobileOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-blue-50 transition-colors">
-                          <LayoutDashboard size={15} /> Dashboard
-                        </Link>
-                      )}
-                      <button onClick={() => { setShowLogoutModal(true); setMobileOpen(false); }}
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors">
-                        <LogOut size={15} /> Logout
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.header>
 
-      {/* spacer so page content isn't hidden under fixed header */}
-      <div className="h-16" />
-
-      {/* ─────────────────────────────────────────
-          LOGOUT MODAL
-      ───────────────────────────────────────── */}
+      {/* Logout Modal Overhaul */}
       <AnimatePresence>
         {showLogoutModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          >
-            {/* backdrop */}
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#0F172A]/20 backdrop-blur-md"
               onClick={() => setShowLogoutModal(false)}
             />
-
-            {/* modal card */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.93, y: 16 }}
-              animate={{ opacity: 1, scale: 1,    y: 0  }}
-              exit={{   opacity: 0, scale: 0.93, y: 16 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              className="relative bg-white rounded-2xl shadow-2xl shadow-blue-100 border border-blue-100 w-full max-w-sm p-6"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white rounded-[32px] border border-stone-200 p-8 w-full max-w-sm shadow-[0_30px_100px_rgba(0,0,0,0.15)]"
             >
-              {/* close x */}
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
-              >
-                <X size={16} />
-              </button>
-
-              {/* icon */}
-              <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mb-4">
-                <AlertTriangle size={22} className="text-red-500" />
+              <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-6">
+                <AlertTriangle size={28} className="text-red-500" />
               </div>
-
-              <h2 className="text-lg font-black text-slate-900 mb-1 tracking-tight">
-                Sign out of Slotify?
+              <h2 className="text-2xl font-semibold text-slate-900 mb-2" style={{ fontFamily: "Charter, serif" }}>
+                Sign out?
               </h2>
-              <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                You'll need to sign back in to access your workspace and bookings.
+              <p className="text-slate-500 text-[15px] mb-8 leading-relaxed">
+                You will be signed out of your current workspace and redirected to the login page.
               </p>
-
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleLogout}
+                  className="w-full py-3.5 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-100"
+                >
+                  Sign out
+                </button>
                 <button
                   onClick={() => setShowLogoutModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="w-full py-3.5 rounded-2xl bg-white border border-stone-200 text-slate-600 font-semibold hover:bg-stone-50 transition-colors"
                 >
                   Cancel
                 </button>
-                <motion.button
-                  onClick={handleLogout}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors shadow-md shadow-red-200"
-                >
-                  <LogOut size={14} />
-                  Sign out
-                </motion.button>
               </div>
             </motion.div>
           </motion.div>
