@@ -1,63 +1,46 @@
-// 🔥 REAL PAGES (IMPORTANT)
 import CreateService from "../features/dashboard/CreateService";
 import CreateAvailability from "../features/dashboard/CreateAvailability";
 import BookingsList from "../features/Bookings/BookingsList";
 import TeamMembers from "../features/Team/TeamMembers";
 import PlansPage from "../features/Plans/PlansPage";
+import Profile from "../features/Professional/ProfessionalProfile";
+
+/* CORE */
+const Overview = () => <div>Overview</div>;
+const Settings = () => <div>Settings</div>;
 
 
-/* ================= CORE ================= */
+/* TEMPLATES */
+const Students = () => <div>Students</div>;
+const Sessions = () => <div>Sessions</div>;
+const Notes = () => <div>Notes</div>;
 
-const Overview = () => <div>Overview Dashboard</div>;
-const Settings = () => <div>Settings Page</div>;
-const Bookings = () => <div>Bookings Page</div>;
+const Clients = () => <div>Clients</div>;
+const Workouts = () => <div>Workouts</div>;
+const Progress = () => <div>Progress</div>;
 
-/* ================= DUMMY PAGES (FOR TEMPLATES) ================= */   
+const Assignments = () => <div>Assignments</div>;
+const Attendance = () => <div>Attendance</div>;
 
-/* ================= MENTOR ================= */
+const Meetings = () => <div>Meetings</div>;
+const Reports = () => <div>Reports</div>;
 
-const Students = () => <div>Students Page</div>;
-const Sessions = () => <div>Sessions Page</div>;
-const Notes = () => <div>Notes Page</div>;
-
-/* ================= FITNESS ================= */
-
-const Clients = () => <div>Clients Page</div>;
-const Workouts = () => <div>Workouts Page</div>;
-const Progress = () => <div>Progress Tracking</div>;
-
-/* ================= TEACHER ================= */
-
-const Assignments = () => <div>Assignments Page</div>;
-const Attendance = () => <div>Attendance Page</div>;
-
-/* ================= CONSULTANT ================= */
-
-const Meetings = () => <div>Meetings Page</div>;
-const Reports = () => <div>Reports Page</div>;
-
-/* ================= DOCTOR ================= */
-
-const Patients = () => <div>Patients Page</div>;
-const Appointments = () => <div>Appointments Page</div>;
-const MedicalRecords = () => <div>Medical Records Page</div>;
-const CheckupAI = () => <div>AI Checkup System</div>;
-
-/* ================= EXPORT MAP ================= */
+const Patients = () => <div>Patients</div>;
+const Appointments = () => <div>Appointments</div>;
+const MedicalRecords = () => <div>Medical Records</div>;
+const CheckupAI = () => <div>AI Checkup</div>;
 
 export const COMPONENT_MAP = {
-  // 🔥 CORE (REAL SYSTEM)
   overview: Overview,
-
-  services: CreateService,          // ✅ required
-  availability: CreateAvailability, // ✅ required
-  bookings: BookingsList,       // ✅ use real page (not dummy)
-
+  bookings: BookingsList,
+  services: CreateService,
+  availability: CreateAvailability,
   plans: PlansPage,
+
   team: TeamMembers,
   settings: Settings,
+  profile: Profile,
 
-  // 🔥 OPTIONAL TEMPLATES (placeholders until you build APIs)
   students: Students,
   sessions: Sessions,
   notes: Notes,

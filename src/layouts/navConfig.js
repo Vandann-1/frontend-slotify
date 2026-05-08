@@ -1,155 +1,151 @@
 import {
   LayoutDashboard,
-  Users,
   Calendar,
+  ClipboardList,
+  Users,
   Settings,
   BookOpen,
   Activity,
-  ClipboardList,
   FileText,
   TrendingUp,
-  BrainCircuit
+  BrainCircuit,
+  User,
+  CreditCard
 } from "lucide-react";
 
-export const SIDEBAR_CONFIG = {
-
-  // 🔥 CORE SYSTEM
+export const NAV_CONFIG = {
+  // 🔥 CORE (common for all)
   overview: {
     label: "Overview",
     icon: LayoutDashboard,
-    group: "core",
-  },
-
-  services: {
-    label: "Services",
-    icon: ClipboardList,
-    group: "core",
-  },
-
-  availability: {
-    label: "Availability",
-    icon: Calendar,
-    group: "core",
+    roles: ["admin", "professional"],
   },
 
   bookings: {
     label: "Bookings",
     icon: Calendar,
-    group: "core",
+    roles: ["admin", "professional"],
   },
 
-  team: {
-    label: "Team",
-    icon: Users,
-    group: "core",
+  services: {
+    label: "Services",
+    icon: ClipboardList,
+    roles: ["admin", "professional"],
+  },
+
+  availability: {
+    label: "Availability",
+    icon: Calendar,
+    roles: ["admin", "professional"],
+  },
+
+  plans: {
+    label: "Plans",
+    icon: CreditCard,
+    roles: ["admin", "professional"],
   },
 
   settings: {
     label: "Settings",
     icon: Settings,
-    group: "core",
+    roles: ["admin", "professional"],
   },
 
-  // 🔥 MENTOR TEMPLATE
+  // 🔥 ROLE BASED
+  team: {
+    label: "Team",
+    icon: Users,
+    roles: ["admin"],
+  },
+
+  profile: {
+    label: "Profile",
+    icon: User,
+    roles: ["professional"],
+  },
+
+  // 🔥 TEMPLATE BASED
   students: {
     label: "Students",
     icon: BookOpen,
-    group: "features",
-    template: "mentor",
+    templates: ["mentor", "teacher"],
   },
 
   sessions: {
     label: "Sessions",
     icon: Activity,
-    group: "features",
-    template: "mentor",
+    templates: ["mentor"],
   },
 
   notes: {
     label: "Notes",
     icon: FileText,
-    group: "features",
-    template: "mentor",
+    templates: ["mentor", "teacher"],
   },
 
-  // 🔥 FITNESS TEMPLATE
   clients: {
     label: "Clients",
     icon: Users,
-    group: "features",
-    template: "fitness",
+    templates: ["fitness"],
   },
 
   workouts: {
     label: "Workouts",
     icon: Activity,
-    group: "features",
-    template: "fitness",
+    templates: ["fitness"],
   },
 
   progress: {
     label: "Progress",
     icon: TrendingUp,
-    group: "features",
-    template: "fitness",
+    templates: ["fitness"],
   },
 
-  // 🔥 TEACHER TEMPLATE
   assignments: {
     label: "Assignments",
     icon: ClipboardList,
-    group: "features",
-    template: "teacher",
+    templates: ["teacher"],
   },
 
   attendance: {
     label: "Attendance",
     icon: Calendar,
-    group: "features",
-    template: "teacher",
+    templates: ["teacher"],
   },
 
-  // 🔥 CONSULTANT TEMPLATE
   meetings: {
     label: "Meetings",
     icon: Users,
-    group: "features",
-    template: "consultant",
+    templates: ["consultant"],
   },
 
   reports: {
     label: "Reports",
     icon: FileText,
-    group: "features",
-    template: "consultant",
+    templates: ["consultant"],
   },
 
-  // 🔥 DOCTOR TEMPLATE
   patients: {
     label: "Patients",
     icon: Users,
-    group: "features",
-    template: "doctor",
+    templates: ["doctor"],
   },
 
   appointments: {
     label: "Appointments",
     icon: Calendar,
-    group: "features",
-    template: "doctor",
+    templates: ["doctor"],
   },
 
   medical_records: {
     label: "Medical Records",
     icon: FileText,
-    group: "features",
-    template: "doctor",
+    templates: ["doctor"],
   },
 
   checkup_system_ai: {
     label: "AI Checkup",
     icon: BrainCircuit,
-    group: "features",
-    template: "doctor",
+    templates: ["doctor"],
   },
 };

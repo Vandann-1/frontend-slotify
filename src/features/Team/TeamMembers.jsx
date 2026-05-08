@@ -682,7 +682,7 @@ const TeamMembers = ({ slug }) => {
 
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => navigate(`/admin/professionals/${m.user_id}`)}
+                        onClick={() => navigate(`/admin/workspace/${slug}/profile/${m.user_id}`)}
                         className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
                         title="View profile"
                       >

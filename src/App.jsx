@@ -9,24 +9,20 @@ import Login from "./features/auth/pages/Login";
 import Register from "./features/auth/pages/Register";
 import InviteValidatePage from "./features/invite/InviteValidatePage";
 
-/* ================= ADMIN CORE ================= */
-import CreateService from "./features/dashboard/CreateService";
-import CreateAvailability from "./features/dashboard/CreateAvailability";
-import BookingsList from "./features/Bookings/BookingsList";
-
-/* ================= PROFESSIONAL ================= */
-import ProfessionalDashboard from "./features/professional/ProfessionalDashboard";
-import ProfessionalProfile from "./features/professional/ProfessionalProfile";
-import AdminProfessionalDetail from "./features/professional/AdminProfessionalDeatail";
-
 /* ================= WORKSPACE ================= */
-import CreateDashboard from "./features/dashboard/CreateDashboard";
-import WorkspaceList from "./features/dashboard/Listworkspaces";
 import AdminWorkspace from "./features/dashboard/Adminworkspaces";
+import ProfessionalDashboard from "./features/professional/ProfessionalDashboard";
+
+
+/* ================= MANAGEMENT ================= */
+import WorkspaceList from "./features/dashboard/Listworkspaces";
+import CreateDashboard from "./features/dashboard/CreateDashboard";
 
 /* ================= PLANS ================= */
 import PlansPage from "./features/Plans/PlansPage";
 
+/* ================= team ================= */
+import TeamMembers from "./features/Team/TeamMembers";
 /* ================= PROTECTED ================= */
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("access");
@@ -47,26 +43,9 @@ function App() {
           <Route path="/invite-accept/:token" element={<InviteValidatePage />} />
         </Route>
 
-        {/* ================= ADMIN STATIC ================= */}
+        {/* ================= ADMIN WORKSPACE (MAIN SYSTEM) ================= */}
         <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <MainLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="create-service" element={<CreateService />} />
-          <Route path="create-availability" element={<CreateAvailability />} />
-          <Route path="bookings" element={<BookingsList />} />
-
-          {/* default */}
-          <Route index element={<Navigate to="create-service" replace />} />
-        </Route>
-
-        {/* ================= WORKSPACE (ONLY ONE ROUTE) ================= */}
-        <Route
-          path="/admin/workspace/:slug/:page"
+          path="/admin/workspace/:slug/:page/:id?"
           element={
             <ProtectedRoute>
               <AdminWorkspace />
@@ -74,15 +53,15 @@ function App() {
           }
         />
 
-        {/* default workspace */}
+        {/* default page inside workspace */}
         <Route
           path="/admin/workspace/:slug"
-          element={<Navigate to="/admin/workspace/default/dashboard" replace />}
+          element={<Navigate to="/admin/workspace/default/overview" replace />}
         />
 
         {/* ================= PROFESSIONAL ================= */}
         <Route
-          path="/professional/workspace/:slug"
+          path="/professional/workspace/:slug/:page/:id?"
           element={
             <ProtectedRoute>
               <ProfessionalDashboard />
@@ -91,23 +70,8 @@ function App() {
         />
 
         <Route
-          path="/professional/profile"
-          element={
-            <ProtectedRoute>
-              <ProfessionalProfile />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ================= ADMIN PROFESSIONAL ================= */}
-        <Route
-          path="/admin/professionals/:id"
-          element={
-            <ProtectedRoute>
-              <MainLayout />
-              <AdminProfessionalDetail />
-            </ProtectedRoute>
-          }
+          path="/professional/workspace/:slug"
+          element={<Navigate to="/professional/workspace/default/overview" replace />}
         />
 
         {/* ================= MANAGEMENT ================= */}

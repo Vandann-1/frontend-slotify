@@ -149,6 +149,14 @@ export default function Login() {
       const data = await loginUser(form);
       localStorage.setItem("access",  data.access);
       localStorage.setItem("user",    JSON.stringify(data.user));
+            if (data.tenant?.slug) {
+
+        localStorage.setItem(
+          "tenant_slug",
+          data.tenant.slug
+        );
+
+      }
       await handleRedirect(data.user);
     } catch (err) {
       setError(
