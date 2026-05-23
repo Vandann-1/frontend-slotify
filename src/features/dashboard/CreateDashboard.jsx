@@ -193,16 +193,41 @@ const handleSubmit = async () => {
     const createdSlug = res.data?.slug || "";
 
     // optional local storage
-    if (createdSlug) {
-      try {
-        const meta = JSON.parse(localStorage.getItem("workspace_meta") || "{}");
-        meta[createdSlug] = {
-          tenant_type: selectedType,
-          workspace_type: workspaceMode
-        };
-        localStorage.setItem("workspace_meta", JSON.stringify(meta));
-      } catch (_) {}
-    }
+// SAVE TENANT SLUG
+if (createdSlug) {
+
+  localStorage.setItem(
+    "tenant_slug",
+    createdSlug
+  );
+
+  console.log(
+    "TENANT SLUG SAVED:",
+    createdSlug
+  );
+
+  // OPTIONAL META STORAGE
+  try {
+
+    const meta = JSON.parse(
+      localStorage.getItem("workspace_meta") || "{}"
+    );
+
+    meta[createdSlug] = {
+
+      tenant_type: selectedType,
+      workspace_type: workspaceMode
+
+    };
+
+    localStorage.setItem(
+      "workspace_meta",
+      JSON.stringify(meta)
+    );
+
+  } catch (_) {}
+
+}
 
     setSuccess(true);
 

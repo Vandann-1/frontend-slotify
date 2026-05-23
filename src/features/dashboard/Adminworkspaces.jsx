@@ -1,6 +1,6 @@
 // ============================================================
 //  AdminWorkspace.jsx  –  Slotify SaaS Admin Dashboard
-//  Premium White · Sky-Blue Light Theme · Tailwind CSS
+//  Deep Indigo (#3838d2) · Adamina Font · Real Router + Real Pages
 // ============================================================
 
 import { useState, useEffect } from "react";
@@ -8,687 +8,785 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 import { getDashboard } from "../../api/workspaceApi";
 import { COMPONENT_MAP } from "../../layouts/componentMap";
-import { NAV_CONFIG } from "../../layouts/navConfig";
+import { NAV_CONFIG }    from "../../layouts/navConfig";
 
-// ─── Slotify Light Brand Tokens ───────────────────────────────────────────────
-// Primary    : #0EA5E9  (sky-500)
-// Accent     : #38BDF8  (sky-400)
-// Light bg   : #F0F7FF
-// Surface    : #FFFFFF
-// Surface 2  : #F7FAFF
-// Border     : #BFDBFE
-// Border dim : #DBEAFE
-// Sidebar    : #0C1E3A  (deep navy)
-// Muted txt  : #64748B
+import {
+  ChevronRight, ChevronLeft, Bell, Search,
+  ArrowUpRight, ArrowDownRight, MoreHorizontal,
+  Download, Plus, Zap, Users, Activity, TrendingUp,
+  AlertCircle, Settings,
+} from "lucide-react";
+
+// ─── Brand Tokens ─────────────────────────────────────────────────────────────
+// Primary     : #3838d2  deep indigo
+// Primary-L   : #5a5ae8
+// Accent      : #7c3aed  violet
+// BG          : #f8f8ff  ghosted indigo
+// Surface     : #ffffff
+// Border      : #e0e0f5
+// Text        : #1a1a3e
+// Muted       : #6b6b9a
+// Success     : #059669
+// Warning     : #d97706
+// Danger      : #dc2626
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ─── Reusable micro-components ───────────────────────────────────────────────
+// ── Google Fonts ──────────────────────────────────────────────────────────────
+const FontStyle = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Adamina&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c4c4f0; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9898d8; }
+    @keyframes sw-fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @keyframes sw-pulse  { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+    @keyframes sw-spin   { to { transform: rotate(360deg); } }
+  `}</style>
+);
 
-function SlotifyMark({ size = 32, shadow = true }) {
+// ── Avatar ────────────────────────────────────────────────────────────────────
+function Avatar({
+  initials = "A",
+  size     = 36,
+  bg       = "linear-gradient(135deg,#3838d2,#7c3aed)",
+  border   = "2px solid #e0e0f5",
+}) {
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: 9,
-        background: "linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: size * 0.42,
-        fontWeight: 800,
-        color: "#fff",
-        flexShrink: 0,
-        boxShadow: shadow ? "0 4px 14px rgba(14,165,233,0.38)" : "none",
-        letterSpacing: "-0.03em",
-      }}
-    >
-      S
-    </div>
-  );
-}
-
-function Avatar({ initials = "A", size = 34, gradient = "linear-gradient(135deg,#0369a1,#0ea5e9)", border = "2px solid #BFDBFE", fontSize = 13 }) {
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: gradient,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize,
-        fontWeight: 700,
-        color: "#fff",
-        flexShrink: 0,
-        border,
-        cursor: "pointer",
-      }}
-    >
+    <div style={{
+      width: size, height: size, borderRadius: "50%", background: bg,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: Math.round(size * 0.36), fontWeight: 700, color: "#fff",
+      flexShrink: 0, border, cursor: "pointer",
+      fontFamily: "'DM Sans', sans-serif",
+    }}>
       {initials}
     </div>
   );
 }
 
-function ChevronRight({ color = "#94A3B8", size = 12 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
-
-function ChevronLeft({ color = "#94A3B8", size = 16 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
-}
-
-// ─── Stat card ────────────────────────────────────────────────────────────────
-function StatCard({ label, value, delta, up }) {
+// ── Stat Card ─────────────────────────────────────────────────────────────────
+function StatCard({ label, value, delta, up, icon: Icon, delay = 0 }) {
   return (
     <div
-      className="group relative overflow-hidden rounded-2xl border border-blue-100 bg-white p-5 transition-all duration-200 hover:border-sky-300 hover:shadow-lg hover:shadow-sky-100"
-      style={{ fontFamily: "'DM Sans', 'Sora', ui-sans-serif, sans-serif" }}
+      style={{
+        background: "#fff", borderRadius: 16, border: "1px solid #e0e0f5",
+        padding: "20px 22px", position: "relative", overflow: "hidden",
+        animation: `sw-fadeIn 0.4s ease ${delay}ms both`,
+        transition: "box-shadow 0.2s, border-color 0.2s, transform 0.2s",
+        cursor: "default",
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.boxShadow   = "0 8px 32px rgba(56,56,210,0.12)";
+        e.currentTarget.style.borderColor = "#a5a5e8";
+        e.currentTarget.style.transform   = "translateY(-1px)";
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.boxShadow   = "none";
+        e.currentTarget.style.borderColor = "#e0e0f5";
+        e.currentTarget.style.transform   = "none";
+      }}
     >
-      {/* Top accent line */}
-      <div
-        className="absolute inset-x-0 top-0 h-[2px] rounded-t-2xl"
-        style={{ background: up ? "linear-gradient(90deg, transparent, #0EA5E9, transparent)" : "linear-gradient(90deg, transparent, #f87171, transparent)", opacity: 0.6 }}
-      />
-      {/* Corner glow */}
-      <div className="pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full bg-sky-100 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      {/* top accent bar */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 2,
+        background: up
+          ? "linear-gradient(90deg,#3838d2,#7c3aed)"
+          : "linear-gradient(90deg,#dc2626,#f87171)",
+      }} />
 
-      <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-widest text-slate-400">
+      {/* icon badge */}
+      <div style={{
+        position: "absolute", top: 16, right: 16,
+        width: 38, height: 38, borderRadius: 10,
+        background: up ? "rgba(56,56,210,0.08)" : "rgba(220,38,38,0.08)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {Icon && <Icon size={18} color={up ? "#3838d2" : "#dc2626"} />}
+      </div>
+
+      <p style={{
+        fontSize: 10.5, fontWeight: 700, letterSpacing: "0.12em",
+        textTransform: "uppercase", color: "#6b6b9a",
+        fontFamily: "'DM Sans',sans-serif", marginBottom: 10,
+      }}>
         {label}
       </p>
-      <p
-        className="text-[26px] font-extrabold leading-none tracking-tight text-slate-800"
-        style={{ letterSpacing: "-0.05em" }}
-      >
+
+      <p style={{
+        fontSize: 28, fontWeight: 800, color: "#1a1a3e",
+        letterSpacing: "-0.04em", fontFamily: "'DM Sans',sans-serif", lineHeight: 1,
+      }}>
         {value}
       </p>
-      <div className={`mt-2.5 flex items-center gap-1 text-[11px] font-semibold ${up ? "text-sky-500" : "text-red-400"}`}>
-        <span
-          className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9.5px] font-bold"
-          style={{
-            background: up ? "rgba(14,165,233,0.1)" : "rgba(248,113,113,0.1)",
-            color: up ? "#0369a1" : "#dc2626",
-          }}
-        >
-          {up ? "↑" : "↓"} {delta}
+
+      <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{
+          display: "inline-flex", alignItems: "center", gap: 2,
+          background: up ? "rgba(5,150,105,0.1)" : "rgba(220,38,38,0.1)",
+          color: up ? "#059669" : "#dc2626",
+          borderRadius: 6, padding: "2px 7px",
+          fontSize: 11, fontWeight: 700, fontFamily: "'DM Sans',sans-serif",
+        }}>
+          {up ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
+          {delta}
         </span>
-        <span className="text-slate-400">vs last month</span>
+        <span style={{ fontSize: 11, color: "#9999b8", fontFamily: "'DM Sans',sans-serif" }}>
+          vs last month
+        </span>
       </div>
     </div>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ── Sidebar Nav Item ──────────────────────────────────────────────────────────
+function NavItem({ item, active, collapsed, onClick }) {
+  const Icon = item.icon;
+  const [hov, setHov] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      title={collapsed ? item.label : undefined}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 10,
+        padding: collapsed ? "10px 0" : "9px 12px",
+        justifyContent: collapsed ? "center" : "flex-start",
+        width: "100%", marginBottom: 2, borderRadius: 10,
+        cursor: "pointer", border: "none", outline: "none",
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 13, fontWeight: active ? 700 : 500,
+        letterSpacing: "-0.01em",
+        background: active
+          ? "rgba(255,255,255,0.22)"
+          : hov ? "rgba(255,255,255,0.11)" : "transparent",
+        color: "#ffffff",
+        position: "relative", transition: "background 0.15s",
+      }}
+    >
+      {active && (
+        <span style={{
+          position: "absolute", left: 0, top: "18%", bottom: "18%",
+          width: 3, borderRadius: "0 3px 3px 0",
+          background: "#fff", boxShadow: "0 0 8px rgba(255,255,255,0.7)",
+        }} />
+      )}
+
+      {Icon && <Icon size={17} style={{ flexShrink: 0, opacity: active ? 1 : 0.75 }} />}
+
+      {!collapsed && (
+        <span style={{
+          flex: 1, textAlign: "left",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
+          {item.label}
+        </span>
+      )}
+
+      {!collapsed && item.badge && (
+        <span style={{
+          background: "rgba(255,255,255,0.2)", color: "#fff",
+          borderRadius: 20, padding: "1px 7px", fontSize: 10, fontWeight: 700,
+        }}>
+          {item.badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// ── Loading screen ────────────────────────────────────────────────────────────
+function LoadingScreen({ slug }) {
+  return (
+    <>
+      <FontStyle />
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", height: "100vh",
+        background: "#f8f8ff", gap: 20,
+        fontFamily: "'DM Sans', sans-serif",
+      }}>
+        <div style={{ position: "relative", width: 52, height: 52 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: "50%",
+            border: "2.5px solid #e0e0f5", borderTopColor: "#3838d2",
+            animation: "sw-spin 0.8s linear infinite",
+          }} />
+          <div style={{
+            position: "absolute", top: "50%", left: "50%",
+            transform: "translate(-50%,-50%)",
+            width: 26, height: 26, borderRadius: 7,
+            background: "linear-gradient(135deg,#3838d2,#7c3aed)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 13, fontWeight: 800, color: "#fff",
+            fontFamily: "'Adamina', serif",
+          }}>
+            S
+          </div>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <p style={{
+            fontSize: 13, fontWeight: 700,
+            letterSpacing: "0.15em", textTransform: "uppercase",
+            color: "#3838d2",
+          }}>
+            Loading workspace
+          </p>
+          <p style={{ fontSize: 11.5, color: "#9999b8", marginTop: 4 }}>{slug}</p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  MAIN EXPORT
+// ─────────────────────────────────────────────────────────────────────────────
 export default function AdminWorkspace() {
-  const navigate   = useNavigate();
-  const location   = useLocation();
-  const { slug }   = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { slug } = useParams();
 
-  const [dashboard,  setDashboard]  = useState(null);
-  const [collapsed,  setCollapsed]  = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [dashboard, setDashboard] = useState(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const [searchVal, setSearchVal] = useState("");
 
-  // ── Fetch dashboard ──────────────────────────────────────
+  // ── fetch real dashboard ─────────────────────────────────────────────────
   useEffect(() => {
     if (!slug) return;
     getDashboard(slug)
-      .then((res) => { setDashboard(res.data || res); })
-      .catch((err) => { console.error("Dashboard fetch error:", err); });
+      .then((res) => setDashboard(res.data || res))
+      .catch((err) => console.error("Dashboard fetch error:", err));
   }, [slug]);
 
-  // ── Loading ──────────────────────────────────────────────
-  if (!dashboard) {
-    return (
-      <div
-        className="flex h-screen flex-col items-center justify-center gap-4"
-        style={{ background: "#F0F7FF", fontFamily: "'DM Sans','Sora',ui-sans-serif,sans-serif" }}
-      >
-        <div className="relative">
-          <div className="h-12 w-12 rounded-full border-2 border-sky-200 border-t-sky-500 animate-spin" />
-          <SlotifyMark size={28} shadow={false}
-            // centered inside spinner
-            style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)" }}
-          />
-        </div>
-        <div className="text-center">
-          <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-sky-500">
-            Loading workspace
-          </p>
-          <p className="mt-1 text-[11px] text-slate-400">{slug}</p>
-        </div>
-      </div>
-    );
-  }
+  if (!dashboard) return <LoadingScreen slug={slug} />;
 
-  // ── Nav items from backend ───────────────────────────────
-  const navItems = (dashboard?.sections?.length
-    ? dashboard.sections
-    : ["overview"]
-  )
-    .map((key) => ({ key, ...NAV_CONFIG[key] }))
-    .filter((item) => item.label);
-
-  // ── Current page ─────────────────────────────────────────
+  // ── resolve current page from URL ────────────────────────────────────────
   const pathParts = location.pathname.split("/").filter(Boolean);
   const page      = pathParts[pathParts.length - 1] || "overview";
 
-  // ── Component loader ─────────────────────────────────────
+  // ── build nav from backend sections ─────────────────────────────────────
+  const allSections = dashboard?.sections?.length ? dashboard.sections : ["overview"];
+  const coreKeys    = ["overview", "bookings", "services", "availability", "plans", "settings"];
+
+  const coreItems = allSections
+    .filter(k => coreKeys.includes(k))
+    .map(k => ({ key: k, ...NAV_CONFIG[k] }))
+    .filter(i => i.label);
+
+  const featureItems = allSections
+    .filter(k => !coreKeys.includes(k))
+    .map(k => ({ key: k, ...NAV_CONFIG[k] }))
+    .filter(i => i.label);
+
+  // ── resolve real component from your COMPONENT_MAP ───────────────────────
   const Component = COMPONENT_MAP[page] || (() => (
-    <div className="flex h-60 items-center justify-center text-sky-400/60 text-sm">
-      Page not found
+    <div style={{
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      padding: "60px 20px", color: "#9999b8", gap: 12,
+    }}>
+      <div style={{
+        width: 56, height: 56, borderRadius: 16,
+        background: "rgba(56,56,210,0.08)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 26,
+      }}>📄</div>
+      <p style={{ fontSize: 15, fontWeight: 700, color: "#1a1a3e", fontFamily: "'DM Sans',sans-serif" }}>
+        {NAV_CONFIG[page]?.label || page}
+      </p>
+      <p style={{ fontSize: 13, color: "#9999b8", fontFamily: "'DM Sans',sans-serif" }}>
+        This module is ready to be connected
+      </p>
     </div>
   ));
 
+  const currentLabel = NAV_CONFIG[page]?.label || page;
+  const CurrentIcon  = NAV_CONFIG[page]?.icon;
+
+  const goTo = (key) => navigate(`/admin/workspace/${slug}/${key}`);
+
+  const STATS = [
+    { label: "Total Users",     value: "12,840", delta: "+8.2%",  up: true,  icon: Users       },
+    { label: "Active Sessions", value: "3,241",  delta: "+12.5%", up: true,  icon: Activity    },
+    { label: "Revenue MTD",     value: "$94.2k", delta: "+5.3%",  up: true,  icon: TrendingUp  },
+    { label: "Churn Rate",      value: "1.8%",   delta: "-0.4%",  up: false, icon: AlertCircle },
+  ];
+
+  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div
-      className="flex h-screen overflow-hidden"
-      style={{ background: "#F0F7FF", fontFamily: "'DM Sans','Sora',ui-sans-serif,sans-serif", color: "#0c2340" }}
-    >
-      {/* ══════════════════════════════════════════════════
-          SIDEBAR — Deep Navy (brand contrast)
-      ══════════════════════════════════════════════════ */}
-<aside
-  className="bg-gradient-to-r from-blue-600 to-blue-500"
-  style={{
-    width: collapsed ? 68 : 236,
-    minWidth: collapsed ? 68 : 236,
-    borderRight: "1px solid #60A5FA", // Tailwind blue-400
-    display: "flex",
-    flexDirection: "column",
-    transition: "width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)",
-    overflow: "hidden",
-    zIndex: 50,
-    position: "relative",
-  }}
->
-  {/* ── Logo strip ── */}
-  <div
-    style={{
-      padding: collapsed ? "18px 0" : "18px 18px",
-      borderBottom: "1px solid #60A5FA",
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      minHeight: 62,
-      justifyContent: collapsed ? "center" : "flex-start",
-    }}
-  >
-    <SlotifyMark size={32} color="#FFFFFF" />
+    <>
+      <FontStyle />
 
-    {!collapsed && (
-      <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-bold leading-tight" style={{ color: "#FFFFFF", letterSpacing: "-0.02em" }}>
-          Slotify
-        </p>
-        <p className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-[0.1em]" style={{ color: "#DBEAFE" }}> {/* blue-100 */}
-          Admin Console
-        </p>
-      </div>
-    )}
+      <div style={{
+        display: "flex", height: "100vh", overflow: "hidden",
+        background: "#f8f8ff", fontFamily: "'DM Sans', sans-serif", color: "#1a1a3e",
+      }}>
 
-    {!collapsed ? (
-      <button
-        onClick={() => setCollapsed(true)}
-        title="Collapse sidebar"
-        className="ml-auto flex items-center rounded-md p-1 transition-colors hover:bg-white/15"
-        style={{ background: "none", border: "none", cursor: "pointer", color: "#DBEAFE" }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "#FFFFFF"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "#DBEAFE"; }}
-      >
-        <ChevronLeft size={16} color="currentColor" />
-      </button>
-    ) : (
-      <button
-        onClick={() => setCollapsed(false)}
-        title="Expand sidebar"
-        className="flex items-center rounded-md p-1 transition-colors hover:bg-white/15"
-        style={{ background: "none", border: "none", cursor: "pointer", color: "#DBEAFE" }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "#FFFFFF"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "#DBEAFE"; }}
-      >
-        <ChevronRight size={16} color="currentColor" />
-      </button>
-    )}
-  </div>
+        {/* ════════════════════════════════════
+            SIDEBAR
+        ════════════════════════════════════ */}
+        <aside style={{
+          width:    collapsed ? 68 : 240,
+          minWidth: collapsed ? 68 : 240,
+          background: "linear-gradient(180deg,#3838d2 0%,#2d2daa 100%)",
+          display: "flex", flexDirection: "column", overflow: "hidden",
+          transition:
+            "width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)",
+          zIndex: 50, position: "relative",
+          borderRight: "1px solid rgba(255,255,255,0.08)",
+        }}>
 
-  {/* ── Workspace badge ── */}
-  {!collapsed && (
-    <div
-      className="mx-3 my-3 flex items-center gap-2 rounded-lg px-3 py-2"
-      style={{ background: "#1E40AF", border: "1px solid #60A5FA" }} // blue-800 background
-    >
-      <span
-        className="h-2 w-2 flex-shrink-0 rounded-full"
-        style={{ background: "#10B981", boxShadow: "0 0 8px rgba(16, 185, 129, 0.6)" }} 
-      />
-      <span className="truncate text-[12px] font-semibold" style={{ color: "#FFFFFF" }}>
-        {slug || "workspace"}
-      </span>
-      <span
-        className="ml-auto flex-shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider"
-        style={{ background: "rgba(255, 255, 255, 0.9)", color: "#1E40AF" }}
-      >
-        Live
-      </span>
-    </div>
-  )}
+          {/* Logo */}
+          <div style={{
+            padding: collapsed ? "18px 0" : "18px 16px",
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
+            display: "flex", alignItems: "center", gap: 10,
+            minHeight: 62, justifyContent: collapsed ? "center" : "flex-start",
+          }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+              background: "rgba(255,255,255,0.15)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 16, fontWeight: 800, color: "#fff",
+              fontFamily: "'Adamina', serif",
+            }}>S</div>
 
-  {/* ── Scrollable Navigation ── */}
-  <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "#60A5FA transparent" }}>
-    
-    {/* ── Section 1: Core ── */}
-    {!collapsed && (
-      <p className="px-5 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#DBEAFE", opacity: 0.8 }}>
-        Core
-      </p>
-    )}
-    <nav className="px-2 py-1">
-      {navItems
-        .filter(item => ['overview', 'team', 'plans'].includes(item.key))
-        .map((item) => {
-          const Icon = item.icon;
-          const active = page === item.key;
-
-          return (
-            <button
-              key={item.key}
-              onClick={() => navigate(`/admin/workspace/${slug}/${item.key}`)}
-              title={collapsed ? item.label : undefined}
-              className="relative mb-1 w-full rounded-lg border-0 outline-none transition-all duration-150"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 9,
-                padding: collapsed ? "10px 0" : "8px 11px",
-                justifyContent: collapsed ? "center" : "flex-start",
-                cursor: "pointer",
-                background: active ? "rgba(255, 255, 255, 0.25)" : "transparent", 
-                color: "#FFFFFF",
-                fontWeight: active ? 600 : 500,
-                fontSize: 13,
-                letterSpacing: "-0.01em",
-                fontFamily: "inherit",
-              }}
-              onMouseEnter={(e) => {
-                if (!active) e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
-              }}
-              onMouseLeave={(e) => {
-                if (!active) e.currentTarget.style.background = "transparent";
-              }}
-            >
-              {active && (
-                <span
-                  className="absolute left-0 rounded-r-full"
-                  style={{ top: "15%", bottom: "15%", width: 3, background: "#FFFFFF", boxShadow: "0 0 8px #FFFFFF" }}
-                />
-              )}
-              {Icon && <Icon size={18} style={{ flexShrink: 0, color: "inherit", opacity: active ? 1 : 0.8 }} />}
-              {!collapsed && <span className="truncate">{item.label}</span>}
-            </button>
-          );
-        })}
-    </nav>
-
-    {/* ── Section 2: Features ── */}
-    {!collapsed && (
-      <p className="px-5 pb-1.5 pt-4 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#DBEAFE", opacity: 0.8 }}>
-        Features
-      </p>
-    )}
-    <nav className="px-2 py-1">
-      {navItems
-        .filter(item => !['overview', 'team', 'plans'].includes(item.key))
-        .map((item) => {
-          const Icon = item.icon;
-          const active = page === item.key;
-
-          return (
-            <button
-              key={item.key}
-              onClick={() => navigate(`/admin/workspace/${slug}/${item.key}`)}
-              title={collapsed ? item.label : undefined}
-              className="relative mb-1 w-full rounded-lg border-0 outline-none transition-all duration-150"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 9,
-                padding: collapsed ? "10px 0" : "8px 11px",
-                justifyContent: collapsed ? "center" : "flex-start",
-                cursor: "pointer",
-                background: active ? "rgba(255, 255, 255, 0.25)" : "transparent",
-                color: "#FFFFFF",
-                fontWeight: active ? 600 : 500,
-                fontSize: 13,
-                letterSpacing: "-0.01em",
-                fontFamily: "inherit",
-              }}
-              onMouseEnter={(e) => {
-                if (!active) e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
-              }}
-              onMouseLeave={(e) => {
-                if (!active) e.currentTarget.style.background = "transparent";
-              }}
-            >
-              {active && (
-                <span
-                  className="absolute left-0 rounded-r-full"
-                  style={{ top: "15%", bottom: "15%", width: 3, background: "#FFFFFF", boxShadow: "0 0 8px #FFFFFF" }}
-                />
-              )}
-              {Icon && <Icon size={18} style={{ flexShrink: 0, color: "inherit", opacity: active ? 1 : 0.8 }} />}
-              {!collapsed && <span className="truncate">{item.label}</span>}
-              
-              {!collapsed && item.badge && (
-                <span
-                  className="ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-bold"
-                  style={{ background: "rgba(255,255,255,0.2)", color: "#FFFFFF" }}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-    </nav>
-  </div>
-
-  {/* ── Upgrade nudge (collapsed: hidden) ── */}
-  {!collapsed && (
-    <div
-      className="mx-3 mb-3 mt-2 rounded-xl p-3 shadow-lg"
-      style={{ 
-        background: "rgba(255, 255, 255, 0.15)", 
-        border: "1px solid #60A5FA" 
-      }}
-    >
-      <p className="text-[12px] font-bold" style={{ color: "#FFFFFF" }}>Slotify Pro</p>
-      <p className="mt-1 text-[11px] leading-snug" style={{ color: "#DBEAFE" }}>Unlock advanced routing & priority team support</p>
-      <button
-        className="mt-3 w-full rounded-lg py-1.5 text-[11px] font-bold transition-all shadow-sm hover:shadow-md hover:-translate-y-px"
-        style={{ 
-          background: "#FFFFFF", 
-          color: "#2563EB", // blue-600 text for the button
-          border: "none", 
-          cursor: "pointer", 
-          fontFamily: "inherit" 
-        }}
-      >
-        Upgrade Plan ↗
-      </button>
-    </div>
-  )}
-
-  {/* ── Bottom user strip ── */}
-  <div
-    style={{
-      borderTop: "1px solid #60A5FA",
-      padding: collapsed ? "12px 0" : "12px 14px",
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      justifyContent: collapsed ? "center" : "flex-start",
-      background: "#1D4ED8" // Tailwind blue-700 to anchor the footer cleanly
-    }}
-  >
-    <Avatar 
-      initials="AU" 
-      size={32} 
-      border="2px solid rgba(255,255,255,0.2)" 
-      background="#FFFFFF" 
-      textColor="#2563EB" 
-    />
-
-    {!collapsed && (
-      <>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-bold leading-tight" style={{ color: "#FFFFFF" }}>
-            Admin User
-          </p>
-          <p className="mt-0.5 truncate text-[11px] font-medium" style={{ color: "#DBEAFE" }}>
-            Super Admin
-          </p>
-        </div>
-        <button
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "#DBEAFE" }}
-          className="rounded-md transition-colors hover:bg-white/15"
-          title="Account Settings"
-          onMouseEnter={(e) => { e.currentTarget.style.color = "#FFFFFF"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "#DBEAFE"; }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /><circle cx="5" cy="12" r="1.5" />
-          </svg>
-        </button>
-      </>
-    )}
-  </div>
-</aside>
-
-      {/* ══════════════════════════════════════════════════
-          MAIN AREA
-      ══════════════════════════════════════════════════ */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden" style={{ background: "#F0F7FF" }}>
-
-        {/* ── Top bar ── */}
-        <header
-          className="flex items-center gap-3 border-b border-blue-100 bg-white px-6"
-          style={{ height: 62, minHeight: 62 }}
-        >
-          {/* Breadcrumb */}
-          <div className="flex flex-1 items-center gap-1.5">
-            <span className="text-[11.5px] text-slate-400">Admin</span>
-            <ChevronRight color="#CBD5E1" />
-            <span className="text-[11.5px] font-medium text-sky-600">{slug}</span>
-            <ChevronRight color="#CBD5E1" />
-            <span className="text-[13px] font-bold text-sky-500">
-              {NAV_CONFIG[page]?.label || page}
-            </span>
-          </div>
-
-          {/* Search */}
-          <div
-            className="flex items-center gap-2 rounded-xl border border-blue-100 bg-slate-50 px-3 py-2 transition-all hover:border-sky-300 focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-100"
-            style={{ width: 210 }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              placeholder="Search…"
-              className="flex-1 bg-transparent text-[12px] text-slate-700 outline-none placeholder:text-slate-400"
-              style={{ fontFamily: "inherit" }}
-            />
-            <span
-              className="rounded border border-blue-100 px-1.5 py-0.5 font-mono text-[9.5px] text-slate-400"
-            >
-              ⌘K
-            </span>
-          </div>
-
-          {/* Notification bell */}
-          <button
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-blue-100 bg-white text-slate-500 transition-all hover:border-sky-300 hover:text-sky-500 hover:shadow-sm"
-            style={{ cursor: "pointer" }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            <span
-              className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-sky-500"
-              style={{ boxShadow: "0 0 5px rgba(14,165,233,0.6)" }}
-            />
-          </button>
-
-          {/* Settings */}
-          <button
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-blue-100 bg-white text-slate-500 transition-all hover:border-sky-300 hover:text-sky-500 hover:shadow-sm"
-            style={{ cursor: "pointer" }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </button>
-
-          {/* Divider */}
-          <div className="h-7 w-px bg-blue-100" />
-
-          {/* Avatar */}
-          <div className="flex items-center gap-2">
-            <Avatar initials="A" size={34} border="2px solid #BFDBFE" />
-            <div className="hidden sm:block">
-              <p className="text-[12px] font-semibold leading-tight text-slate-700">Admin User</p>
-              <p className="text-[10px] text-slate-400">Super Admin</p>
-            </div>
-          </div>
-        </header>
-
-        {/* ── Page content ── */}
-        <main
-          className="flex-1 overflow-y-auto"
-          style={{ padding: "24px 30px", scrollbarWidth: "thin", scrollbarColor: "#BFDBFE transparent" }}
-        >
-          {/* ── Page heading ── */}
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <h1
-                  className="text-[23px] font-extrabold text-slate-800"
-                  style={{ letterSpacing: "-0.03em", lineHeight: 1.15 }}
-                >
-                  {NAV_CONFIG[page]?.label || page}
-                </h1>
-                <span
-                  className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
-                  style={{ background: "rgba(14,165,233,0.1)", color: "#0369a1" }}
-                >
-                  Live
-                </span>
+            {!collapsed && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                  fontSize: 15, fontWeight: 800, color: "#fff",
+                  letterSpacing: "-0.02em", fontFamily: "'Adamina', serif",
+                }}>Slotify</p>
+                <p style={{
+                  fontSize: 9.5, fontWeight: 600, textTransform: "uppercase",
+                  letterSpacing: "0.12em", color: "rgba(255,255,255,0.55)", marginTop: 1,
+                }}>Admin Console</p>
               </div>
-              <p className="mt-1.5 text-[12.5px] text-slate-400">
-                Workspace ·{" "}
-                <span className="font-semibold text-sky-600">{slug}</span>
-              </p>
-            </div>
+            )}
 
-            {/* CTA */}
-            <div className="flex items-center gap-2.5">
-              <button
-                className="flex items-center gap-2 rounded-xl border border-blue-100 bg-white px-4 py-2.5 text-[12.5px] font-semibold text-slate-600 shadow-sm transition-all hover:border-sky-300 hover:text-sky-600"
-                style={{ cursor: "pointer", fontFamily: "inherit" }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                Export
-              </button>
-              <button
-                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[12.5px] font-bold text-white shadow-md transition-all hover:shadow-sky-200 hover:-translate-y-px active:scale-[0.98]"
-                style={{
-                  background: "linear-gradient(135deg,#0EA5E9 0%,#0284c7 100%)",
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  boxShadow: "0 4px 14px rgba(14,165,233,0.35)",
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                New Action
-              </button>
-            </div>
+            <button
+              onClick={() => setCollapsed(c => !c)}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "rgba(255,255,255,0.6)", padding: 4,
+                borderRadius: 6, display: "flex", alignItems: "center",
+                transition: "color 0.15s", flexShrink: 0,
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = "#fff"}
+              onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+            >
+              {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
           </div>
 
-          {/* ── Stats strip ── */}
-          <div
-            className="mb-6 grid gap-4"
-            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}
-          >
-            {[
-              { label: "Total Users",     value: "12,840", delta: "+8.2%",  up: true  },
-              { label: "Active Sessions", value: "3,241",  delta: "+12.5%", up: true  },
-              { label: "Revenue",         value: "$94.2k", delta: "+5.3%",  up: true  },
-              { label: "Churn Rate",      value: "1.8%",   delta: "-0.4%",  up: false },
-            ].map((stat) => (
-              <StatCard key={stat.label} {...stat} />
+          {/* Workspace badge */}
+          {!collapsed && (
+            <div style={{
+              margin: "12px 12px 4px",
+              background: "rgba(255,255,255,0.1)",
+              borderRadius: 10, padding: "8px 12px",
+              border: "1px solid rgba(255,255,255,0.15)",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <div style={{
+                width: 7, height: 7, borderRadius: "50%",
+                background: "#10b981", flexShrink: 0,
+                animation: "sw-pulse 2s ease infinite",
+                boxShadow: "0 0 6px #10b981",
+              }} />
+              <span style={{
+                fontSize: 12.5, fontWeight: 600, color: "#fff",
+                flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>{slug}</span>
+              <span style={{
+                background: "rgba(255,255,255,0.2)", color: "#fff",
+                borderRadius: 20, padding: "1px 7px",
+                fontSize: 9, fontWeight: 700, letterSpacing: "0.05em",
+              }}>PRO</span>
+            </div>
+          )}
+
+          {/* Scrollable nav */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px", scrollbarWidth: "none" }}>
+
+            {/* Core */}
+            {!collapsed && coreItems.length > 0 && (
+              <p style={{
+                fontSize: 9.5, fontWeight: 700, letterSpacing: "0.14em",
+                textTransform: "uppercase", color: "rgba(255,255,255,0.4)",
+                padding: "10px 4px 6px", fontFamily: "'DM Sans',sans-serif",
+              }}>Core</p>
+            )}
+            {coreItems.map(item => (
+              <NavItem
+                key={item.key}
+                item={item}
+                active={page === item.key}
+                collapsed={collapsed}
+                onClick={() => goTo(item.key)}
+              />
             ))}
+
+            {/* Features */}
+            {featureItems.length > 0 && (
+              <>
+                {!collapsed && (
+                  <p style={{
+                    fontSize: 9.5, fontWeight: 700, letterSpacing: "0.14em",
+                    textTransform: "uppercase", color: "rgba(255,255,255,0.4)",
+                    padding: "14px 4px 6px", fontFamily: "'DM Sans',sans-serif",
+                  }}>Features</p>
+                )}
+                {featureItems.map(item => (
+                  <NavItem
+                    key={item.key}
+                    item={item}
+                    active={page === item.key}
+                    collapsed={collapsed}
+                    onClick={() => goTo(item.key)}
+                  />
+                ))}
+              </>
+            )}
           </div>
 
-          {/* ── Dynamic component area ── */}
-          <div
-            className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm"
-          >
-            {/* Section header */}
-            <div className="flex items-center justify-between border-b border-blue-100 bg-slate-50/60 px-6 py-4">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="h-7 w-7 flex-shrink-0 rounded-lg"
-                  style={{ background: "linear-gradient(135deg,rgba(14,165,233,0.15),rgba(56,189,248,0.08))", display: "flex", alignItems: "center", justifyContent: "center" }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-                  </svg>
+          {/* Upgrade nudge */}
+          {!collapsed && (
+            <div style={{
+              margin: "0 10px 10px",
+              background: "rgba(124,58,237,0.3)",
+              border: "1px solid rgba(124,58,237,0.5)",
+              borderRadius: 12, padding: "12px 14px",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Zap size={13} color="#c4b5fd" />
+                <p style={{ fontSize: 12.5, fontWeight: 700, color: "#fff" }}>Slotify Scale</p>
+              </div>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.45, marginBottom: 10 }}>
+                Unlock white-label &amp; API access
+              </p>
+              <button style={{
+                width: "100%", padding: "7px",
+                background: "#fff", color: "#3838d2",
+                border: "none", borderRadius: 8,
+                fontSize: 12, fontWeight: 800,
+                cursor: "pointer", fontFamily: "inherit",
+              }}>
+                Upgrade Plan →
+              </button>
+            </div>
+          )}
+
+          {/* User strip */}
+          <div style={{
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+            padding: collapsed ? "12px 0" : "12px 14px",
+            display: "flex", alignItems: "center", gap: 10,
+            justifyContent: collapsed ? "center" : "flex-start",
+            background: "rgba(0,0,0,0.15)",
+          }}>
+            <Avatar initials="AU" size={32} border="2px solid rgba(255,255,255,0.2)" />
+            {!collapsed && (
+              <>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    fontSize: 13, fontWeight: 700, color: "#fff",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>Admin User</p>
+                  <p style={{ fontSize: 10.5, color: "rgba(255,255,255,0.5)", marginTop: 1 }}>
+                    Super Admin
+                  </p>
                 </div>
-                <h2
-                  className="text-[14.5px] font-bold text-slate-700"
-                  style={{ letterSpacing: "-0.02em" }}
+                <button
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "rgba(255,255,255,0.5)", display: "flex",
+                    transition: "color 0.15s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#fff"}
+                  onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
                 >
-                  {NAV_CONFIG[page]?.label || page}
-                </h2>
+                  <MoreHorizontal size={16} />
+                </button>
+              </>
+            )}
+          </div>
+        </aside>
+
+        {/* ════════════════════════════════════
+            MAIN
+        ════════════════════════════════════ */}
+        <div style={{
+          flex: 1, minWidth: 0,
+          display: "flex", flexDirection: "column", overflow: "hidden",
+        }}>
+
+          {/* Top bar */}
+          <header style={{
+            height: 62, minHeight: 62,
+            background: "#fff", borderBottom: "1px solid #e0e0f5",
+            display: "flex", alignItems: "center",
+            padding: "0 24px", gap: 12,
+          }}>
+            {/* Breadcrumb */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 11.5, color: "#9999b8" }}>Admin</span>
+              <ChevronRight size={12} color="#c4c4f0" />
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: "#3838d2" }}>{slug}</span>
+              <ChevronRight size={12} color="#c4c4f0" />
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#3838d2" }}>
+                {currentLabel}
+              </span>
+            </div>
+
+            {/* Search bar */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              background: "#f8f8ff", border: "1px solid #e0e0f5",
+              borderRadius: 10, padding: "8px 12px", width: 210,
+            }}>
+              <Search size={13} color="#9999b8" />
+              <input
+                placeholder="Search…"
+                value={searchVal}
+                onChange={e => setSearchVal(e.target.value)}
+                style={{
+                  flex: 1, background: "none", border: "none", outline: "none",
+                  fontSize: 12.5, color: "#1a1a3e",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              />
+              <span style={{
+                fontSize: 10, fontFamily: "monospace", color: "#c4c4f0",
+                background: "#f0f0fb", borderRadius: 4, padding: "1px 5px",
+                border: "1px solid #e0e0f5",
+              }}>⌘K</span>
+            </div>
+
+            {/* Bell */}
+            <button
+              style={{
+                position: "relative", width: 36, height: 36, borderRadius: 10,
+                background: "#f8f8ff", border: "1px solid #e0e0f5",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "#6b6b9a",
+                transition: "all 0.15s", flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "#a5a5e8"; e.currentTarget.style.color = "#3838d2"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "#e0e0f5"; e.currentTarget.style.color = "#6b6b9a"; }}
+            >
+              <Bell size={15} />
+              <span style={{
+                position: "absolute", top: 8, right: 8,
+                width: 7, height: 7, borderRadius: "50%",
+                background: "#3838d2", border: "1.5px solid #fff",
+              }} />
+            </button>
+
+            {/* Settings shortcut */}
+            <button
+              onClick={() => goTo("settings")}
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: page === "settings" ? "rgba(56,56,210,0.1)" : "#f8f8ff",
+                border: `1px solid ${page === "settings" ? "#a5a5e8" : "#e0e0f5"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+                color: page === "settings" ? "#3838d2" : "#6b6b9a",
+                transition: "all 0.15s", flexShrink: 0,
+              }}
+              onMouseEnter={e => {
+                if (page !== "settings") {
+                  e.currentTarget.style.borderColor = "#a5a5e8";
+                  e.currentTarget.style.color = "#3838d2";
+                }
+              }}
+              onMouseLeave={e => {
+                if (page !== "settings") {
+                  e.currentTarget.style.borderColor = "#e0e0f5";
+                  e.currentTarget.style.color = "#6b6b9a";
+                }
+              }}
+            >
+              <Settings size={15} />
+            </button>
+
+            <div style={{ width: 1, height: 28, background: "#e0e0f5" }} />
+
+            {/* User */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Avatar initials="A" size={34} />
+              <div>
+                <p style={{ fontSize: 12.5, fontWeight: 700, color: "#1a1a3e", lineHeight: 1.2 }}>
+                  Admin User
+                </p>
+                <p style={{ fontSize: 10.5, color: "#9999b8" }}>Super Admin</p>
+              </div>
+            </div>
+          </header>
+
+          {/* Page content */}
+          <main style={{
+            flex: 1, overflowY: "auto",
+            padding: "26px 28px",
+            scrollbarWidth: "thin",
+            scrollbarColor: "#c4c4f0 transparent",
+          }}>
+
+            {/* Page heading */}
+            <div style={{
+              display: "flex", alignItems: "flex-start",
+              justifyContent: "space-between", marginBottom: 24,
+            }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <h1 style={{
+                    fontSize: 26, fontWeight: 800, color: "#1a1a3e",
+                    letterSpacing: "-0.04em",
+                    fontFamily: "'Adamina', serif",
+                  }}>
+                    {currentLabel}
+                  </h1>
+                  <span style={{
+                    background: "rgba(56,56,210,0.1)", color: "#3838d2",
+                    borderRadius: 20, padding: "3px 10px",
+                    fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em",
+                  }}>LIVE</span>
+                </div>
+                <p style={{ fontSize: 12.5, color: "#9999b8" }}>
+                  Workspace ·{" "}
+                  <span style={{ fontWeight: 600, color: "#3838d2" }}>{slug}</span>
+                </p>
               </div>
 
-              {/* Filter pills */}
-              <div className="flex items-center gap-2">
-                {["All", "Active", "Archived"].map((t, i) => (
-                  <button
-                    key={t}
-                    className="rounded-lg px-3 py-1.5 text-[11.5px] font-medium transition-all"
-                    style={{
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                      background: i === 0 ? "rgba(14,165,233,0.1)" : "transparent",
-                      border: i === 0 ? "1px solid rgba(14,165,233,0.35)" : "1px solid #DBEAFE",
-                      color: i === 0 ? "#0369a1" : "#64748b",
-                      fontWeight: i === 0 ? 600 : 400,
-                    }}
-                  >
-                    {t}
-                  </button>
-                ))}
-
-                {/* More options */}
+              <div style={{ display: "flex", gap: 10 }}>
                 <button
-                  className="ml-1 flex h-7 w-7 items-center justify-center rounded-lg border border-blue-100 bg-white text-slate-400 transition-all hover:border-sky-300 hover:text-sky-500"
-                  style={{ cursor: "pointer" }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 7,
+                    padding: "9px 16px", background: "#fff",
+                    border: "1px solid #e0e0f5", borderRadius: 10,
+                    fontSize: 13, fontWeight: 600, color: "#6b6b9a",
+                    cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#a5a5e8"; e.currentTarget.style.color = "#3838d2"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#e0e0f5"; e.currentTarget.style.color = "#6b6b9a"; }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
-                  </svg>
+                  <Download size={13} /> Export
+                </button>
+                <button
+                  style={{
+                    display: "flex", alignItems: "center", gap: 7,
+                    padding: "9px 16px",
+                    background: "linear-gradient(135deg,#3838d2,#5a5ae8)",
+                    color: "#fff", border: "none", borderRadius: 10,
+                    fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    fontFamily: "inherit",
+                    boxShadow: "0 4px 14px rgba(56,56,210,0.35)",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(56,56,210,0.45)";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = "none";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(56,56,210,0.35)";
+                  }}
+                >
+                  <Plus size={14} /> New Action
                 </button>
               </div>
             </div>
 
-            {/* Actual page component */}
-            <div key={page} className="p-6">
-              <Component slug={slug} dashboard={dashboard} />
+            {/* Stats strip */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))",
+              gap: 16, marginBottom: 24,
+            }}>
+              {STATS.map((s, i) => (
+                <StatCard key={s.label} {...s} delay={i * 60} />
+              ))}
             </div>
-          </div>
 
-          {/* ── Bottom spacer ── */}
-          <div className="h-8" />
-        </main>
+            {/* ── Dynamic section panel ── */}
+            <div style={{
+              background: "#fff", borderRadius: 18,
+              border: "1px solid #e0e0f5", overflow: "hidden",
+            }}>
+              {/* Panel header */}
+              <div style={{
+                display: "flex", alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 20px",
+                borderBottom: "1px solid #f0f0fb",
+                background: "#fdfdff",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 8,
+                    background: "rgba(56,56,210,0.08)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {CurrentIcon && <CurrentIcon size={15} color="#3838d2" />}
+                  </div>
+                  <h2 style={{
+                    fontSize: 14.5, fontWeight: 800, color: "#1a1a3e",
+                    letterSpacing: "-0.02em",
+                    fontFamily: "'Adamina', serif",
+                  }}>
+                    {currentLabel}
+                  </h2>
+                </div>
+
+                <div style={{ display: "flex", gap: 6 }}>
+                  {["All", "Active", "Archived"].map((t, i) => (
+                    <button
+                      key={t}
+                      style={{
+                        padding: "5px 12px", borderRadius: 7,
+                        fontSize: 12, fontWeight: i === 0 ? 700 : 500,
+                        fontFamily: "'DM Sans',sans-serif", cursor: "pointer",
+                        background: i === 0 ? "rgba(56,56,210,0.1)" : "transparent",
+                        border: i === 0
+                          ? "1px solid rgba(56,56,210,0.3)"
+                          : "1px solid #e0e0f5",
+                        color: i === 0 ? "#3838d2" : "#6b6b9a",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                  <button style={{
+                    width: 28, height: 28, borderRadius: 7,
+                    background: "#f8f8ff", border: "1px solid #e0e0f5",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", color: "#9999b8",
+                  }}>
+                    <MoreHorizontal size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* ── YOUR REAL PAGE COMPONENT RENDERS HERE ── */}
+              <div
+                key={page}
+                style={{ padding: "20px 24px", animation: "sw-fadeIn 0.3s ease both" }}
+              >
+                <Component slug={slug} dashboard={dashboard} />
+              </div>
+            </div>
+
+            <div style={{ height: 32 }} />
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

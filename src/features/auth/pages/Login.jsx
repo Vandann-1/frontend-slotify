@@ -77,99 +77,218 @@ export default function Login() {
                                OR workspace.owner_email === user.email)
        5. Fallback → treat as professional/member
   ───────────────────────────────────────────────────────────────── */
-  const handleRedirect = async (user) => {
+const handleRedirect = async (data) => {
 
-    // ── Step 1: pending invite always wins ──
-    const pendingInvite = localStorage.getItem("pending_invite_token");
-    if (pendingInvite) {
-      navigate(`/invite-accept/${pendingInvite}`);
-      return;
+  // ─────────────────────────────
+  // Pending invite
+  // ─────────────────────────────
+  const pendingInvite =
+    localStorage.getItem(
+      "pending_invite_token"
+    );
+
+  if (pendingInvite) {
+
+    navigate(
+      `/invite-accept/${pendingInvite}`
+    );
+
+    return;
+  }
+
+  // ─────────────────────────────
+  // Membership role
+  // ─────────────────────────────
+  const role = (
+    data?.membership?.role || ""
+  ).toLowerCase();
+
+  // ─────────────────────────────
+  // Tenant slug
+  // ─────────────────────────────
+  const tenantSlug =
+    data?.tenant?.slug;
+
+  console.log("ROLE:", role);
+
+  console.log(
+    "TENANT SLUG:",
+    tenantSlug
+  );
+
+  // ─────────────────────────────
+  // No tenant
+  // ─────────────────────────────
+  if (!tenantSlug) {
+
+    navigate("/create-dashboard");
+
+    return;
+  }
+
+  // ─────────────────────────────
+  // Owner / Admin
+  // ─────────────────────────────
+  if (
+    role === "owner" ||
+    role === "admin"
+  ) {
+
+    navigate(
+      `/admin/workspace/${tenantSlug}/dashboard`
+    );
+
+    return;
+  }
+
+  // ─────────────────────────────
+  // Professional
+  // ─────────────────────────────
+  if (
+    role === "professional"
+  ) {
+
+    navigate(
+      `/professional/workspace/${tenantSlug}`
+    );
+
+    return;
+  }
+
+  // ─────────────────────────────
+  // Fallback
+  // ─────────────────────────────
+  navigate("/workspaces");
+};
+
+/* ── Email / password login ── */
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  setLoading(true);
+  setError("");
+
+  try {
+
+    // ─────────────────────────────
+    // LOGIN API CALL
+    // ─────────────────────────────
+    const data = await loginUser(form);
+
+    // ─────────────────────────────
+    // DEBUG LOGS
+    // ─────────────────────────────
+    console.log("LOGIN RESPONSE:", data);
+    console.log("FULL LOGIN DATA:", data);
+    console.log("MEMBERSHIP ROLE:", data?.membership?.role);
+    console.log("TENANT:", data?.tenant);
+
+    // ─────────────────────────────
+    // VALIDATE ACCESS TOKEN
+    // ─────────────────────────────
+    if (!data?.access) {
+      throw new Error("Access token missing.");
     }
 
-    // ── Step 2: read role from user object ──
-    // Covers all common Django REST patterns — adjust if your API differs
-    const roleStr  = (user?.role || user?.user_type || "").toLowerCase();
-    const isAdminFlag = user?.is_admin === true || user?.is_staff === true;
-    const isAdminRole = roleStr === "admin" || roleStr === "owner";
+    // ─────────────────────────────
+    // SAVE TOKENS
+    // ─────────────────────────────
+    localStorage.setItem(
+      "access",
+      data.access
+    );
 
-    // ── Step 3: try fetching workspaces ──
-    try {
-      const workspaces = await getWorkspaces();
-      const hasWorkspaces = Array.isArray(workspaces) && workspaces.length > 0;
+    if (data?.refresh) {
 
-      if (!hasWorkspaces) {
-        // ── No workspaces returned ──
-        // If flagged as admin/owner → let them create one
-        // If member → they were invited so shouldn't create — go to /workspaces
-        if (isAdminRole || isAdminFlag) {
-          navigate("/create-dashboard");
-        } else {
-          // Member with no workspace yet (e.g. invite not accepted yet)
-          navigate("/workspaces");
-        }
-        return;
-      }
-
-      const first = workspaces[0];
-      const slug  = first?.slug;
-
-      if (!slug) {
-        navigate("/create-dashboard");
-        return;
-      }
-
-      // ── Step 4: check workspace ownership as extra signal ──
-      const isOwner =
-        (user?.id   && first?.owner       === user.id)   ||
-        (user?.email && first?.owner_email === user.email) ||
-        (user?.email && first?.created_by_email === user.email);
-
-      const isAdmin = isAdminRole || isAdminFlag || isOwner;
-
-      if (isAdmin) {
-        // ✅ Admin / owner  →  /admin/workspace/:slug/dashboard
-        navigate(`/admin/workspace/${slug}/dashboard`);
-      } else {
-        // ✅ Professional / member  →  /professional/workspace/:slug
-        navigate(`/professional/workspace/${slug}`);
-      }
-
-    } catch {
-      // API failed — safe fallback
-      navigate("/create-dashboard");
-    }
-  };
-
-  /* ── Email / password login ── */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const data = await loginUser(form);
-      localStorage.setItem("access",  data.access);
-      localStorage.setItem("user",    JSON.stringify(data.user));
-            if (data.tenant?.slug) {
-
-        localStorage.setItem(
-          "tenant_slug",
-          data.tenant.slug
-        );
-
-      }
-      await handleRedirect(data.user);
-    } catch (err) {
-      setError(
-        err?.response?.data?.detail ||
-        err?.response?.data?.non_field_errors?.[0] ||
-        "Invalid email or password."
+      localStorage.setItem(
+        "refresh",
+        data.refresh
       );
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  /* ── Google login ── */
+    }
+
+    // ─────────────────────────────
+    // SAVE USER
+    // ─────────────────────────────
+    if (data?.user) {
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(data.user)
+      );
+
+    }
+
+    // ─────────────────────────────
+    // SAVE TENANT SLUG
+    // ─────────────────────────────
+    if (data?.tenant?.slug) {
+
+      localStorage.setItem(
+        "tenant_slug",
+        data.tenant.slug
+      );
+
+      console.log(
+        "TENANT SLUG SAVED:",
+        data.tenant.slug
+      );
+
+    } else {
+
+      // Remove old invalid tenant
+      localStorage.removeItem(
+        "tenant_slug"
+      );
+
+      // Warn only for admin
+      
+
+      
+
+    }
+
+    // ─────────────────────────────
+    // DEBUG LOCAL STORAGE
+    // ─────────────────────────────
+    console.log(
+      "LOCAL STORAGE TENANT:",
+      localStorage.getItem("tenant_slug")
+    );
+
+    // ─────────────────────────────
+    // REDIRECT
+    // ─────────────────────────────
+    await handleRedirect(data);
+
+  } catch (err) {
+
+    console.error(
+      "LOGIN ERROR:",
+      err
+    );
+
+    setError(
+
+      err?.response?.data?.detail ||
+
+      err?.response?.data?.non_field_errors?.[0] ||
+
+      err?.message ||
+
+      "Invalid email or password."
+
+    );
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
+
+
+/* ── Google login ── */
   const handleGoogleLogin = async (credentialResponse) => {
     setLoading(true);
     setError("");
@@ -186,7 +305,7 @@ export default function Login() {
       }
       localStorage.setItem("access", data.access);
       localStorage.setItem("user",   JSON.stringify(data.user));
-      await handleRedirect(data.user);
+      await handleRedirect(data);
     } catch {
       setError("Google sign-in failed. Please try again.");
     } finally {
