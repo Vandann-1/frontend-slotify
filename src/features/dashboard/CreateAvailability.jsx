@@ -441,261 +441,195 @@ export default function CreateAvailability() {
           {/* ════════════════════════════════════
               RIGHT PANEL – The Form
           ════════════════════════════════════ */}
-          <main className="rounded-3xl bg-white shadow-sm border border-gray-100 p-6 sm:p-8">
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-7">
-
-              {/* ── STEP 1 : Service ── */}
-              <section className="animate-slideDown">
-                <SectionLabel step="1" title="Select a Service" />
-
-                {/* Service cards (if ≤6) or fallback select */}
-                {services.length === 0 ? (
-                  <p className="text-sm text-gray-400 font-[DM_Sans]">Loading services…</p>
-                ) : services.length <= 6 ? (
-                  /* Card grid */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                    {services.map((svc) => {
-                      const active = String(svc.id) === String(form.service);
-                      return (
-                        <button
-                          key={svc.id}
-                          type="button"
-                          onClick={() => setForm((p) => ({ ...p, service: String(svc.id) }))}
-                          className={`text-left rounded-2xl border-2 px-4 py-3.5 transition-all duration-200
-                            ${active
-                              ? "border-[#3838d2] bg-[#3838d2]/5 shadow-md shadow-[#3838d2]/10"
-                              : "border-gray-200 hover:border-[#3838d2]/40 hover:bg-gray-50"}`}
-                        >
-                          <p className={`font-semibold text-sm font-[DM_Sans] ${active ? "text-[#3838d2]" : "text-gray-800"}`}>
-                            {svc.name}
-                          </p>
-                          <p className="text-xs text-gray-400 font-[DM_Sans] mt-0.5">
-                            ⏱ {svc.duration} min session
-                          </p>
-                          {active && (
-                            <span className="inline-block mt-2 text-[10px] font-bold bg-[#3838d2] text-white px-2 py-0.5 rounded-full font-[DM_Sans] tracking-wide">
-                              SELECTED
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  /* Fallback: native select for long lists */
-                  <select
-                    name="service"
-                    value={form.service}
-                    onChange={handleChange}
-                    required
-                    className="w-full mt-3 px-4 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-800
-                      font-[DM_Sans] text-sm bg-white
-                      focus:outline-none focus:border-[#3838d2] focus:ring-4 focus:ring-[#3838d2]/10
-                      transition-all duration-200"
-                  >
-                    <option value="">— Choose a service —</option>
-                    {services.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.duration} mins)
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </section>
-
-              {/* ── STEP 2 : Schedule type + Day/Date ── */}
-              {form.service && (
-                <section className="animate-slideDown">
-                  <SectionLabel step="2" title="Set Your Schedule" />
-
-                  {/* Weekly / Specific toggle */}
-                  <div className="mt-3">
-                    <ModeToggle value={form.mode} onChange={handleModeChange} />
-                  </div>
-
-                  {/* Weekly → day picker */}
-                  {form.mode === "weekly" && (
-                    <div className="mt-4 animate-slideDown">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2.5 font-[DM_Sans]">
-                        Pick a day
-                      </p>
-                      <DayPicker value={form.day_of_week} onChange={handleDayChange} />
-                    </div>
-                  )}
-
-                  {/* Specific → date input */}
-                  {form.mode === "specific" && (
-                    <div className="mt-4 animate-slideDown">
-                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2 block font-[DM_Sans]">
-                        Pick a date
-                      </label>
-                      <input
-                        type="date"
-                        name="date_specific"
-                        value={form.date_specific}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-800
-                          font-[DM_Sans] text-sm bg-white
-                          focus:outline-none focus:border-[#3838d2] focus:ring-4 focus:ring-[#3838d2]/10
-                          transition-all duration-200"
-                      />
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {/* ── STEP 3 : Time range ── */}
-{(form.day_of_week || form.date_specific) && (
-  <section className="animate-slideDown">
-    <SectionLabel step="3" title="Set Time Window" />
+<main className="max-w-2xl mx-auto rounded-[2.5rem] bg-white border border-gray-100 shadow-2xl shadow-indigo-100/40 p-8 sm:p-10 transition-all duration-300">
+  <form onSubmit={handleSubmit} className="flex flex-col gap-10">
     
-    <div className="mt-3 grid grid-cols-2 gap-4">
-      {/* Start Time Selection */}
-      <div className="flex flex-col gap-1">
-        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 flex items-center gap-1.5">
-          <svg className="w-3 h-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 3l14 9-14 9V3z" />
-          </svg>
-          Start Time
-        </label>
-        <div className="flex gap-1">
-          <select 
-            name="start_time"
-            value={form.start_time}
-            onChange={handleChange}
-            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-[#3838d2]/20 focus:border-[#3838d2] outline-none appearance-none cursor-pointer"
-          >
-            {Array.from({ length: 48 }).map((_, i) => {
-              const hour = Math.floor(i / 2);
-              const min = i % 2 === 0 ? "00" : "30";
-              const ampm = hour >= 12 ? "PM" : "AM";
-              const displayHour = hour % 12 === 0 ? 12 : hour % 12;
-              const value = `${hour.toString().padStart(2, '0')}:${min}`;
-              return (
-                <option key={value} value={value}>
-                  {displayHour}:{min} {ampm}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-      </div>
+    {/* STEP 1: SERVICE SELECTION */}
+    <section className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <SectionLabel step="1" title="Select Service" />
 
-      {/* End Time Selection */}
-      <div className="flex flex-col gap-1">
-        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 flex items-center gap-1.5">
-          <svg className="w-3 h-3 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 6h12v12H6z" />
-          </svg>
-          End Time
-        </label>
-        <select 
-          name="end_time"
-          value={form.end_time}
-          onChange={handleChange}
-          className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-[#3838d2]/20 focus:border-[#3838d2] outline-none appearance-none cursor-pointer"
-        >
-          {Array.from({ length: 48 }).map((_, i) => {
-            const hour = Math.floor(i / 2);
-            const min = i % 2 === 0 ? "00" : "30";
-            const ampm = hour >= 12 ? "PM" : "AM";
-            const displayHour = hour % 12 === 0 ? 12 : hour % 12;
-            const value = `${hour.toString().padStart(2, '0')}:${min}`;
+      {services.length === 0 ? (
+        <div className="py-12 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+          <p className="text-sm text-gray-400 font-medium tracking-wide">Syncing available services...</p>
+        </div>
+      ) : services.length <= 6 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+          {services.map((svc) => {
+            const active = String(svc.id) === String(form.service);
             return (
-              <option key={value} value={value}>
-                {displayHour}:{min} {ampm}
-              </option>
+              <button
+                key={svc.id}
+                type="button"
+                onClick={() => setForm((p) => ({ ...p, service: String(svc.id) }))}
+                className={`relative text-left p-5 rounded-2xl border-2 transition-all duration-300 group
+                  ${active 
+                    ? "border-[#3838d2] bg-indigo-50/30 shadow-lg shadow-indigo-100/30" 
+                    : "border-gray-50 hover:border-indigo-100 hover:bg-gray-50/50"}`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <p className={`font-bold text-[15px] leading-tight transition-colors ${active ? "text-[#3838d2]" : "text-gray-700"}`}>
+                    {svc.name}
+                  </p>
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${active ? "border-[#3838d2] bg-[#3838d2]" : "border-gray-200"}`}>
+                    {active && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                </div>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                  {svc.duration} Minute Session
+                </p>
+              </button>
             );
           })}
-        </select>
-      </div>
-    </div>
-
-    {/* Validation & Duration Footer */}
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
-      {selectedService && (
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-gray-400 font-[DM_Sans]">Service Duration:</span>
-          <span className="bg-[#3838d2]/10 text-[#3838d2] text-[11px] font-bold px-2 py-0.5 rounded-md font-[DM_Sans]">
-            {selectedService.duration} mins
-          </span>
+        </div>
+      ) : (
+        <div className="relative mt-2">
+          <select
+            name="service"
+            value={form.service}
+            onChange={handleChange}
+            required
+            className="w-full px-5 py-4 rounded-2xl border-2 border-gray-50 bg-white text-gray-800 font-semibold text-sm focus:border-[#3838d2] focus:ring-4 focus:ring-indigo-50 outline-none appearance-none transition-all cursor-pointer"
+          >
+            <option value="">Choose a service</option>
+            {services.map((s) => (
+              <option key={s.id} value={s.id}>{s.name} ({s.duration} mins)</option>
+            ))}
+          </select>
+          <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+          </div>
         </div>
       )}
+    </section>
 
-      {form.start_time && form.end_time && (
-        <div className="flex items-center gap-1.5">
-          {(() => {
-            const startArr = form.start_time.split(':');
-            const endArr = form.end_time.split(':');
-            const startTotal = parseInt(startArr[0]) * 60 + parseInt(startArr[1]);
-            const endTotal = parseInt(endArr[0]) * 60 + parseInt(endArr[1]);
-            const diff = endTotal - startTotal;
-            const isValid = diff >= (selectedService?.duration || 0);
-
-            return (
-              <>
-                <div className={`w-1.5 h-1.5 rounded-full ${isValid ? 'bg-green-500' : 'bg-rose-500'}`} />
-                <span className={`text-[10px] font-bold uppercase tracking-tight ${isValid ? 'text-gray-500' : 'text-rose-600'}`}>
-                  {isValid ? `Window: ${Math.floor(diff/60)}h ${diff%60}m` : 'Invalid Time Window'}
-                </span>
-              </>
-            );
-          })()}
+    {/* STEP 2: SCHEDULE TYPE */}
+    {form.service && (
+      <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="flex items-center justify-between px-1">
+          <SectionLabel step="2" title="Schedule Mode" />
+          <ModeToggle value={form.mode} onChange={handleModeChange} />
         </div>
-      )}
-    </div>
-  </section>
-)}
 
-              {/* ── STEP 4 : Preview + Submit ── */}
-              {form.start_time && form.end_time && (
-                <section className="animate-slideDown">
-                  <SectionLabel step="4" title="Review & Confirm" />
+        <div className="p-2 bg-gray-50/50 rounded-[1.75rem] border border-gray-100 transition-all">
+          {form.mode === "weekly" ? (
+            <div className="p-2"><DayPicker value={form.day_of_week} onChange={handleDayChange} /></div>
+          ) : (
+            <div className="p-3">
+              <input
+                type="date"
+                name="date_specific"
+                value={form.date_specific}
+                onChange={handleChange}
+                required
+                className="w-full bg-white px-5 py-4 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50/50 outline-none transition-all font-bold text-gray-700"
+              />
+            </div>
+          )}
+        </div>
+      </section>
+    )}
 
-                  {/* Live slot preview */}
-                  <SlotPreview
-                    service={selectedService}
-                    mode={form.mode}
-                    day={form.day_of_week}
-                    date={form.date_specific}
-                    start={form.start_time}
-                    end={form.end_time}
-                  />
+    {/* STEP 3: TIME RANGE */}
+    {(form.day_of_week || form.date_specific) && (
+      <section className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <SectionLabel step="3" title="Availability Window" />
+        
+        <div className="grid grid-cols-2 gap-6">
+          {[ 
+            { label: 'Start Time', name: 'start_time', color: 'bg-emerald-500' },
+            { label: 'End Time', name: 'end_time', color: 'bg-rose-500' }
+          ].map((field) => (
+            <div key={field.name} className="flex flex-col gap-2.5">
+              <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 ml-1">
+                <span className={`w-1.5 h-1.5 rounded-full ${field.color}`} />
+                {field.label}
+              </label>
+              <div className="relative">
+                <select 
+                  name={field.name}
+                  value={form[field.name]}
+                  onChange={handleChange}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-4 text-sm font-bold text-gray-700 focus:border-[#3838d2] focus:ring-4 focus:ring-indigo-50 outline-none appearance-none cursor-pointer transition-all"
+                >
+                  {Array.from({ length: 48 }).map((_, i) => {
+                    const hour = Math.floor(i / 2);
+                    const min = i % 2 === 0 ? "00" : "30";
+                    const ampm = hour >= 12 ? "PM" : "AM";
+                    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+                    const val = `${hour.toString().padStart(2, '0')}:${min}`;
+                    return <option key={val} value={val}>{displayHour}:{min} {ampm}</option>;
+                  })}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-300">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
-                  {/* Submit button */}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={`mt-5 w-full py-4 rounded-2xl text-white font-bold text-base font-[DM_Sans]
-                      tracking-wide transition-all duration-200 flex items-center justify-center gap-2
-                      ${loading
-                        ? "bg-[#3838d2]/60 cursor-not-allowed"
-                        : "bg-[#3838d2] hover:bg-[#2a2aab] active:scale-[0.98] shadow-lg shadow-[#3838d2]/30 hover:shadow-[#3838d2]/50"}`}
-                  >
-                    {loading ? (
-                      <>
-                        {/* Spinner */}
-                        <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
-                          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                        </svg>
-                        Creating slots…
-                      </>
-                    ) : (
-                      <>
-                        <span>Create Availability</span>
-                        <span>→</span>
-                      </>
-                    )}
-                  </button>
-                </section>
-              )}
+        {/* VALIDATION FOOTER */}
+        {form.start_time && form.end_time && (
+          <div className="flex items-center justify-between px-4 py-4 bg-gray-50 rounded-2xl border border-gray-100">
+            {(() => {
+              const startArr = form.start_time.split(':').map(Number);
+              const endArr = form.end_time.split(':').map(Number);
+              const diff = (endArr[0] * 60 + endArr[1]) - (startArr[0] * 60 + startArr[1]);
+              const isValid = diff >= (selectedService?.duration || 0);
+              return (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2.5 h-2.5 rounded-full ${isValid ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+                    <span className={`text-[11px] font-black uppercase tracking-widest ${isValid ? 'text-gray-500' : 'text-rose-600'}`}>
+                      {isValid ? `Window: ${Math.floor(diff/60)}h ${diff%60}m` : 'Invalid Range'}
+                    </span>
+                  </div>
+                  <div className="bg-indigo-50 px-2.5 py-1 rounded-lg">
+                    <span className="text-[10px] font-black text-indigo-600 uppercase">
+                      {selectedService?.duration}m Needed
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        )}
+      </section>
+    )}
 
-            </form>
-          </main>
+    {/* STEP 4 : SUBMIT */}
+    {form.start_time && form.end_time && (
+      <section className="pt-6 border-t border-gray-50 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <SlotPreview
+          service={selectedService}
+          mode={form.mode}
+          day={form.day_of_week}
+          date={form.date_specific}
+          start={form.start_time}
+          end={form.end_time}
+        />
 
+        <button
+          type="submit"
+          disabled={loading}
+          className={`mt-10 w-full py-5 rounded-2xl text-white font-black text-sm uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden group
+            ${loading 
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+              : "bg-[#3838d2] hover:bg-[#2a2aab] shadow-xl shadow-indigo-200/50 active:scale-[0.98]"}`}
+        >
+          {loading ? (
+            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+          ) : (
+            <>
+              <span>Confirm Availability</span>
+              <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+            </>
+          )}
+        </button>
+      </section>
+    )}
+  </form>
+</main>
         </div>
       </div>
     </>
